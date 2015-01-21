@@ -88,7 +88,7 @@ def get_base_queryset(request, model=Page):
 
 def json_response(data):
     return HttpResponse(
-        json.dumps(data, cls=WagtailAPIJSONEncoder),
+        json.dumps(data, cls=WagtailAPIJSONEncoder, sort_keys=True, indent=4),
         content_type='application/json'
     )
 
