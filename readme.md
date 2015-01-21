@@ -42,10 +42,10 @@ Once installed, you then need to add ``wagtailapi`` to ``INSTALLED_APPS`` in you
 
 
 
-Usage
------
+Basic Usage
+-----------
 
-### Listing all pages
+### Listing pages
 
 This view should list all live pages in your project that are not in a private section.
 
@@ -95,41 +95,6 @@ Example:
 ```
 
 
-### Listing pages of a specific type
-
-**THIS API HAS CHANGED. WILL UPDATE SOON**
-
-You can narrow down this list by page type by appending the app label and model name to the end of the path.
-
-Example:
-
-```
-    > http http://localhost:8000/api/v1/pages/demo.BlogPage/
-
-    HTTP/1.0 200 OK
-    
-    {
-        "count": 3, 
-        "results": [
-            {
-                "id": 16, 
-                "title": "Blog post", 
-                "type": "demo.BlogPage"
-            }, 
-            {
-                "id": 18, 
-                "title": "Blog post again", 
-                "type": "demo.BlogPage"
-            }, 
-            {
-                "id": 19, 
-                "title": "Another blog post", 
-                "type": "demo.BlogPage"
-            }
-        ]
-    }
-```
-
 ### Viewing details about an individual page
 
 
@@ -176,7 +141,7 @@ Example:
 ```
 
 ```
-    > http http://localhost:8000/api/v1/pages/demo.BlogPage/
+    > http http://localhost:8000/api/v1/pages/?type=demo.BlogPage
 
     HTTP/1.0 200 OK
     
@@ -363,13 +328,15 @@ Example:
 ```
 
 
-Advanced usage
---------------
+Filtering, ordering and Searching
+---------------------------------
 
 ### Filtering by field values
 
 You can do som ebasic 
 
+
+### Filtering by page type
 
 
 ### Filtering by tree position
