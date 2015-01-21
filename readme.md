@@ -1,7 +1,10 @@
-Wagtail API
-===========
+Wagtail API module
+==================
 
 The ``wagtailapi`` module can be used to create a simple, read-only, JSON-based API for viewing your Wagtail content.
+
+
+**Warning:** This module is experimental and likely to change in backwards incompatible ways. Once finished, it will be merged into Wagtail as a new contrib app.
 
 
 Installation
@@ -242,11 +245,13 @@ Example:
 ```
 
 
-### Images and Documents
+### Nested Pages, Images and Documents
 
-Images and documents can also be put in the response. When ``wagtailapi`` detects these, it will automatically convert them into a serializable format.
+Images and documents can also be put in the response. ``wagtailapi`` will automatically convert them into a serializable format.
 
-You could return the image object directly but would only give the user access to basic information such as the images title. To return a URL to an image that could be downloaded and shown to the user, call ``get_rendition`` on the object and return that instead.
+Note: In order to create a downloadable URL to an image file, you must call ``get_rendition`` on the image object. This will resize the image on the server side and return a downloadable URL to the image in the JSON response. ``get_rendition`` takes only one parameter, the resize rule (which has the same format as described  [here](http://docs.wagtail.io/en/latest/core_components/images/index.html#using-images-in-templates)).
+
+Nested pages would have their ``get_api_summary_data`` method called if it has been defined.
 
 Example:
 
@@ -258,6 +263,7 @@ Example:
         posted_at = models.DateTimeField()
         image = models.ForeignKey('wagtailimages.Image')
         document = models.ForeignKey('wagtaildocs.Document')
+        linked_page = models.ForeignKey('wagtailcore.Page')
 
         def get_api_detail_data(self):  
             return {
@@ -265,6 +271,7 @@ Example:
                 'posted_at': self.posted_at,
                 'image': self.image.get_rendition('width-800'),
                 'document': self.document,
+                'linked_page': self.linked_page,
             }
 ```
 
@@ -292,6 +299,11 @@ Example:
             "id": 1,
             "title": "A document",
             "url": "/documents/document.pdf"
+        },
+        "linked_page": {
+            "id": 18, 
+            "title": "Blog post again", 
+            "type": "demo.BlogPage"
         }
     }
 ```
@@ -299,26 +311,94 @@ Example:
 
 ### Nesting listings of pages
 
-You can also nest a listing of pages inside the returned document
+You can also nest a listing of pages inside the returned JSON document.
 
+Like with nested pages, each page in the listing would have its ``get_api_summary_data`` method called.
 
-Django REST framework serializers
----------------------------------
+Example:
 
-``wagtailapi`` supports Django REST frameworks serializers API for defining fields to go into the page.
+```
+    # models.py
 
+    class BlogIndexPage(Page):  
+        def get_blog_pages(self):  
+            # Get list of blog pages underneath this page
+            return BlogPage.objects.live().descendant_of(self)
+
+        def get_api_detail_data(self):  
+            return {
+                'blog_pages': self.get_blog_pages(),
+            }
+```
+
+```
+    > http http://localhost:8000/api/v1/pages/5/
+
+    HTTP/1.0 200 OK
+    
+    {
+        "id": 5, 
+        "title": "Blog index", 
+        "type": "demo.BlogIndexPage",
+        "blog_pages": [
+            {
+                "id": 16, 
+                "title": "Blog post", 
+                "type": "demo.BlogPage"
+            }, 
+            {
+                "id": 18, 
+                "title": "Blog post again", 
+                "type": "demo.BlogPage"
+            }, 
+            {
+                "id": 19, 
+                "title": "Another blog post", 
+                "type": "demo.BlogPage"
+            }
+        ]
+    }
+```
 
 
 Advanced usage
 --------------
 
-### Filtering
+### Filtering by field values
 
-``wagtailapi`` uses ``django-filter`` internally.
+You can do som ebasic 
+
+
+
+### Filtering by tree position
+
+**NOT YET IMPLEMENTED**
+
+You can also filter by a pages tree position. This lets you find the decendants, siblings and ancestors of any other page.
+
+#### ``descendant_of``
+
+#### ``child_of``
+
+#### ``ancestor_of``
+
+#### ``parent_of``
+
+#### ``sibling_of``
 
 
 ### Ordering
 
+**NOT YET IMPLEMENTED**
+
+
+#### ``order_by``
+
 ### Searching
 
+Full text searching is also supported. Just add ``?search=Search query here`` on any listing.
+
+
+Images and Documents
+--------------------
 
