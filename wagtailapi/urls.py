@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 
-from django.conf.urls import url, include
+from django.conf.urls import url
 
-from .pages import WagtailPagesAPI
+from . import views
 
 
 urlpatterns = [
-    url(r'^v1/pages/', include(WagtailPagesAPI().get_urlpatterns(), namespace='wagtailapi_v1_pages'))
+    url(r'^v1/pages/$', views.page_listing),
+    url(r'^v1/pages/(\d+)/$', views.page_detail),
 ]
