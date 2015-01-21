@@ -15,6 +15,18 @@ def serialize_page(page, with_details=False):
         # Add summary data
         data.update(page.specific.get_api_summary_data())
 
+    # Add data from child relations
+    if with_details:
+        for child_relation in specific_class._meta.child_relations:
+            if hasattr(child_relation.model, 'get_api_data'):
+                parental_key_name = child_relation.field.rel.related_name
+                child_objects = getattr(page.specific, child_relation.get_accessor_name(), None)
+
+                data[parental_key_name] = [
+                    child_object.get_api_data()
+                    for child_object in child_objects.all()
+                ]
+
     return data
 
 
