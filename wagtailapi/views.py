@@ -101,7 +101,7 @@ def page_listing(request):
     # Response data
     data = {
         'count': results.paginator.count,
-        'results': results.object_list,
+        'results': list(results.object_list),
         'previous': None,
         'next': None,
     }
