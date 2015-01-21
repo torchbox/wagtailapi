@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import json
 import urllib
 
+from django_filters.filterset import filterset_factory
+
 from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -30,6 +32,20 @@ class WagtailAPIPagesListing(object):
         else:
             return Page
 
+    def run_filters(self, queryset, filters):
+        # Find filterset class
+        if hasattr(queryset.model, 'filterset_class'):
+            filterset_class = queryset.model.filterset_class
+        elif hasattr(queryset.model, 'get_filterset_class'):
+            filterset_class = queryset.model.get_filterset_class()
+        else:
+            filterset_class = filterset_factory(queryset.model)
+
+        # Run field filters
+        queryset = filterset_class(filters, queryset=queryset).qs
+
+        return queryset
+
     def get_queryset(self):
         model = self.get_model()
         queryset = model.objects.live().public()
@@ -39,8 +55,7 @@ class WagtailAPIPagesListing(object):
             queryset = queryset.descendant_of(self.site.root_page, inclusive=True)
 
         # Run filters
-        if self.filters and hasattr(model, 'run_api_filters'):
-            queryset = model.run_api_filters(queryset, self.filters)
+        queryset = self.run_filters(queryset, self.filters)
 
         # Search
         if self.search_query:
