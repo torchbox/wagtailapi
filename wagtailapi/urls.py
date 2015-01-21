@@ -10,4 +10,6 @@ urlpatterns = [
     url(r'^v1/pages/(\d+)/$', views.page_detail),
     url(r'^v1/images/$', views.image_listing),
     url(r'^v1/images/(\d+)/$', views.image_detail),
+    url(r'^v1/documents/$', views.document_listing),
+    url(r'^v1/documents/(\d+)/$', views.document_detail),
 ]

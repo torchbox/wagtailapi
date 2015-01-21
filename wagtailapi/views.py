@@ -11,6 +11,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from wagtail.wagtailcore.models import Page
 from wagtail.wagtailimages.models import get_image_model
+from wagtail.wagtaildocs.models import Document
 from wagtail.wagtailcore.utils import resolve_model_string
 
 from . import serialize
@@ -166,5 +167,47 @@ def image_listing(request):
 def image_detail(request, pk):
     image = get_object_or_404(get_image_model(), pk=pk)
     data = serialize.serialize_image(image)
+
+    return json_response(data)
+
+
+def document_listing(request):
+    queryset = Document.objects.all()
+
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(queryset, 10)
+    try:
+        results = paginator.page(page_number)
+    except PageNotAnInteger:
+        results = paginator.page(1)
+    except EmptyPage:
+        results = paginator.page(paginator.num_pages)
+
+    # Response data
+    data = {
+        'count': results.paginator.count,
+        'results': list(results.object_list),
+        'previous': None,
+        'next': None,
+    }
+
+    # Next/previous urls
+    if results.has_next():
+        query_params = {}
+        query_params['page'] = results.next_page_number()
+        data['next'] = request.path + '?' + urllib.urlencode(query_params)
+
+    if results.has_previous():
+        query_params = {}
+        query_params['page'] = results.previous_page_number()
+        data['previous'] = request.path + '?' + urllib.urlencode(query_params)
+
+    return json_response(data)
+
+
+def document_detail(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    data = serialize.serialize_image(document)
 
     return json_response(data)
