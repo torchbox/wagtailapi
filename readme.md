@@ -97,6 +97,8 @@ Example:
 
 ### Listing pages of a specific type
 
+**THIS API HAS CHANGED. WILL UPDATE SOON**
+
 You can narrow down this list by page type by appending the app label and model name to the end of the path.
 
 Example:

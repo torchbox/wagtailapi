@@ -19,7 +19,7 @@ from .json import WagtailAPIJSONEncoder
 class WagtailAPIPagesListing(object):
     def __init__(self, **kwargs):
         self.site = kwargs.pop('site', None)
-        self.model_name = kwargs.pop('model_name', None)
+        self.model_name = kwargs.pop('type', None)
         self.page_number = kwargs.pop('page', 1)
         self.search_query = kwargs.pop('search', '')
         self.filters = kwargs
@@ -54,6 +54,9 @@ class WagtailAPIPagesListing(object):
         if self.page_number and self.page_number != 1:
             query_params['page'] = self.page_number
 
+        if self.model_name:
+            query_params['type'] = self.model_name
+
         if self.search_query:
             query_params['search'] = self.search_query
 
@@ -62,17 +65,16 @@ class WagtailAPIPagesListing(object):
         return query_params
 
     @classmethod
-    def from_request(cls, request, model_name=None):
+    def from_request(cls, request):
         return cls(
             site=request.site,
-            model_name=model_name,
             **dict(request.GET.iteritems())
         )
 
 
 class WagtailPagesAPI(object):
-    def listing_view(self, request, model_name=None):
-        listing = WagtailAPIPagesListing.from_request(request, model_name)
+    def listing_view(self, request):
+        listing = WagtailAPIPagesListing.from_request(request)
         all_results = listing.get_queryset()
 
         # Pagination
@@ -112,7 +114,6 @@ class WagtailPagesAPI(object):
     def get_urlpatterns(self):
         return [
             url(r'^$', self.listing_view, name='listing'),
-            url(r'^(\w+\.\w+)/$', self.listing_view, name='listing'),
             url(r'^(\d+)/$', self.detail_view, name='detail'),
         ]
 
