@@ -38,7 +38,6 @@ class PageListingFilters(object):
         self.search_query = filters.pop('search', '')
         self.order_by = filters.pop('order', '')
 
-        self.exclude = parse_int(filters.pop('exclude', None), 'exclude')
         self.child_of = parse_int(filters.pop('child_of', None), 'child_of')
 
         self.filters = filters
@@ -65,14 +64,6 @@ class PageListingFilters(object):
 
         # Run field filters
         queryset = filterset_class(self.filters, queryset=queryset).qs
-
-        # Exclusion filter
-        if self.exclude:
-            try:
-                exclude = Page.objects.get(id=self.exclude)
-                queryset = queryset.exclude(id=self.exclude)
-            except Page.DoesNotExist:
-                raise Http404("Excluded page doesn't exist")
 
         # Child of filter
         if self.child_of:
@@ -121,9 +112,6 @@ class PageListingFilters(object):
 
         if self.order_by:
             query_params['order'] = self.order_by
-
-        if self.exclude:
-            query_params['exclude'] = self.exclude
 
         if self.child_of:
             query_params['child_of'] = self.child_of
