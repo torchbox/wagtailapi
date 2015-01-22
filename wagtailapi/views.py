@@ -97,7 +97,7 @@ class PageListingFilters(object):
         try:
             results = paginator.page(self.page_number)
         except EmptyPage:
-            raise Http404
+            raise Http404("This page has no results")
 
         return results
 
@@ -202,10 +202,8 @@ def image_listing(request):
     paginator = Paginator(queryset, 10)
     try:
         results = paginator.page(page_number)
-    except PageNotAnInteger:
-        results = paginator.page(1)
     except EmptyPage:
-        results = paginator.page(paginator.num_pages)
+        raise Http404("This page has no results")
 
     # Response data
     data = {
@@ -247,7 +245,7 @@ def document_listing(request):
     try:
         results = paginator.page(page_number)
     except EmptyPage:
-        results = paginator.page(paginator.num_pages)
+        raise Http404("This page has no results")
 
     # Response data
     data = {
