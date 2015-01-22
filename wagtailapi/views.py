@@ -2,12 +2,13 @@ from __future__ import absolute_import
 
 import json
 import urllib
+from functools import wraps
 
 from django_filters.filterset import filterset_factory
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.paginator import Paginator, EmptyPage
 
 from wagtail.wagtailcore.models import Page
 from wagtail.wagtailimages.models import get_image_model
@@ -18,23 +19,27 @@ from . import serialize
 from .json import WagtailAPIJSONEncoder
 
 
-def parse_int(i):
+class BadAPIRequestError(Exception):
+    pass
+
+
+def parse_int(i, field_name):
     if i:
         try:
             return int(i)
         except ValueError:
-            pass
+            raise BadAPIRequestError("%s must be an integer (got: '%s')" % (field_name, i))
 
 
 class PageListingFilters(object):
     def __init__(self, filters):
         self.model_name = filters.pop('type', None)
-        self.page_number = filters.pop('page', 1)
+        self.page_number = parse_int(filters.pop('page', 1), 'page')
         self.search_query = filters.pop('search', '')
         self.order_by = filters.pop('order', '')
 
-        self.exclude = parse_int(filters.pop('exclude', None))
-        self.child_of = parse_int(filters.pop('child_of', None))
+        self.exclude = parse_int(filters.pop('exclude', None), 'exclude')
+        self.child_of = parse_int(filters.pop('child_of', None), 'child_of')
 
         self.filters = filters
 
@@ -44,7 +49,10 @@ class PageListingFilters(object):
 
     def get_model(self):
         if self.model_name:
-            return resolve_model_string(self.model_name)
+            try:
+                return resolve_model_string(self.model_name)
+            except LookupError:
+                raise Http404("Could not find page type: %s" % self.model_name)
         else:
             return Page
 
@@ -60,12 +68,19 @@ class PageListingFilters(object):
 
         # Exclusion filter
         if self.exclude:
-            queryset = queryset.exclude(id=self.exclude)
+            try:
+                exclude = Page.objects.get(id=self.exclude)
+                queryset = queryset.exclude(id=self.exclude)
+            except Page.DoesNotExist:
+                raise Http404("Excluded page doesn't exist")
 
         # Child of filter
         if self.child_of:
-            parent_page = Page.objects.get(id=self.child_of)
-            queryset = queryset.child_of(parent_page)
+            try:
+                parent_page = Page.objects.get(id=self.child_of)
+                queryset = queryset.child_of(parent_page)
+            except Page.DoesNotExist:
+                raise Http404("Parent page doesn't exist")
 
         # Ordering
         if self.order_by:
@@ -90,10 +105,8 @@ class PageListingFilters(object):
         paginator = Paginator(queryset, 10)
         try:
             results = paginator.page(self.page_number)
-        except PageNotAnInteger:
-            results = paginator.page(1)
         except EmptyPage:
-            results = paginator.page(paginator.num_pages)
+            raise Http404
 
         return results
 
@@ -132,13 +145,31 @@ def get_base_queryset(request, model=Page):
     return queryset
 
 
-def json_response(data):
-    return HttpResponse(
+def json_response(data, cls=HttpResponse):
+    return cls(
         json.dumps(data, cls=WagtailAPIJSONEncoder, sort_keys=True, indent=4),
         content_type='application/json'
     )
 
 
+def format_api_exceptions(view):
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        try:
+            return view(*args, **kwargs)
+        except Http404 as e:
+            return json_response({
+                'message': str(e)
+            }, cls=HttpResponseNotFound)
+        except BadAPIRequestError as e:
+            return json_response({
+                'message': str(e)
+            }, cls=HttpResponseBadRequest)
+
+    return wrapper
+
+
+@format_api_exceptions
 def page_listing(request):
     filters = PageListingFilters.from_request(request)
     queryset = get_base_queryset(request, model=filters.get_model())
@@ -166,6 +197,7 @@ def page_listing(request):
     return json_response(data)
 
 
+@format_api_exceptions
 def page_detail(request, pk):
     page = get_object_or_404(get_base_queryset(request), pk=pk).specific
     data = serialize.serialize_page(page, show_child_relations=True)
@@ -173,11 +205,12 @@ def page_detail(request, pk):
     return json_response(data)
 
 
+@format_api_exceptions
 def image_listing(request):
     queryset = get_image_model().objects.all()
 
     # Pagination
-    page_number = request.GET.get('page', 1)
+    page_number = parse_int(request.GET.get('page', 1), 'page')
     paginator = Paginator(queryset, 10)
     try:
         results = paginator.page(page_number)
@@ -208,6 +241,7 @@ def image_listing(request):
     return json_response(data)
 
 
+@format_api_exceptions
 def image_detail(request, pk):
     image = get_object_or_404(get_image_model(), pk=pk)
     data = serialize.serialize_image(image)
@@ -215,16 +249,15 @@ def image_detail(request, pk):
     return json_response(data)
 
 
+@format_api_exceptions
 def document_listing(request):
     queryset = Document.objects.all()
 
     # Pagination
-    page_number = request.GET.get('page', 1)
+    page_number = parse_int(request.GET.get('page', 1), 'page')
     paginator = Paginator(queryset, 10)
     try:
         results = paginator.page(page_number)
-    except PageNotAnInteger:
-        results = paginator.page(1)
     except EmptyPage:
         results = paginator.page(paginator.num_pages)
 
@@ -250,6 +283,7 @@ def document_listing(request):
     return json_response(data)
 
 
+@format_api_exceptions
 def document_detail(request, pk):
     document = get_object_or_404(Document, pk=pk)
     data = serialize.serialize_image(document)
