@@ -24,6 +24,17 @@ class PageListingFilters(object):
         self.page_number = filters.pop('page', 1)
         self.search_query = filters.pop('search', '')
         self.order_by = filters.pop('order', '')
+
+        try:
+            exclude = filters.pop('exclude', '')
+
+            if exclude:
+                self.exclude = [int(x) for x in exclude.split(',')]
+            else:
+                self.exclude = []
+        except ValueError:
+            self.exclude = []
+
         self.filters = filters
 
     @classmethod
@@ -45,6 +56,10 @@ class PageListingFilters(object):
 
         # Run field filters
         queryset = filterset_class(self.filters, queryset=queryset).qs
+
+        # Exclusion filter
+        if self.exclude:
+            queryset = queryset.exclude(id__in=self.exclude)
 
         # Ordering
         if self.order_by:
@@ -87,6 +102,9 @@ class PageListingFilters(object):
 
         if self.order_by:
             query_params['order'] = self.order_by
+
+        if self.exclude:
+            query_params['exclude'] = ','.join([str(x) for x in self.exclude])
 
         if self.search_query:
             query_params['search'] = self.search_query
