@@ -37,10 +37,8 @@ class PageListingFilters(object):
 
     def filter_queryset(self, queryset):
         # Find filterset class
-        if hasattr(queryset.model, 'filterset_class'):
+        if hasattr(queryset.model, 'api_filterset_class'):
             filterset_class = queryset.model.filterset_class
-        elif hasattr(queryset.model, 'get_filterset_class'):
-            filterset_class = queryset.model.get_filterset_class()
         else:
             filterset_class = filterset_factory(queryset.model)
 
@@ -124,7 +122,7 @@ def page_listing(request):
 
 def page_detail(request, pk):
     page = get_object_or_404(get_base_queryset(request), pk=pk).specific
-    data = serialize.serialize_page(page, with_details=True)
+    data = serialize.serialize_page(page)
 
     return json_response(data)
 
