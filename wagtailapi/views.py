@@ -18,6 +18,14 @@ from . import serialize
 from .json import WagtailAPIJSONEncoder
 
 
+def parse_int(i):
+    if i:
+        try:
+            return int(i)
+        except ValueError:
+            pass
+
+
 class PageListingFilters(object):
     def __init__(self, filters):
         self.model_name = filters.pop('type', None)
@@ -25,15 +33,8 @@ class PageListingFilters(object):
         self.search_query = filters.pop('search', '')
         self.order_by = filters.pop('order', '')
 
-        try:
-            exclude = filters.pop('exclude', '')
-
-            if exclude:
-                self.exclude = [int(x) for x in exclude.split(',')]
-            else:
-                self.exclude = []
-        except ValueError:
-            self.exclude = []
+        self.exclude = parse_int(filters.pop('exclude', None))
+        self.child_of = parse_int(filters.pop('child_of', None))
 
         self.filters = filters
 
@@ -59,7 +60,12 @@ class PageListingFilters(object):
 
         # Exclusion filter
         if self.exclude:
-            queryset = queryset.exclude(id__in=self.exclude)
+            queryset = queryset.exclude(id=self.exclude)
+
+        # Child of filter
+        if self.child_of:
+            parent_page = Page.objects.get(id=self.child_of)
+            queryset = queryset.child_of(parent_page)
 
         # Ordering
         if self.order_by:
@@ -104,7 +110,10 @@ class PageListingFilters(object):
             query_params['order'] = self.order_by
 
         if self.exclude:
-            query_params['exclude'] = ','.join([str(x) for x in self.exclude])
+            query_params['exclude'] = self.exclude
+
+        if self.child_of:
+            query_params['child_of'] = self.child_of
 
         if self.search_query:
             query_params['search'] = self.search_query
