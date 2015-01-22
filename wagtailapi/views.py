@@ -23,6 +23,7 @@ class PageListingFilters(object):
         self.model_name = filters.pop('type', None)
         self.page_number = filters.pop('page', 1)
         self.search_query = filters.pop('search', '')
+        self.order_by = filters.pop('order', '')
         self.filters = filters
 
     @classmethod
@@ -44,6 +45,21 @@ class PageListingFilters(object):
 
         # Run field filters
         queryset = filterset_class(self.filters, queryset=queryset).qs
+
+        # Ordering
+        if self.order_by:
+            if self.order_by == 'random':
+                 queryset = queryset.order_by('?')
+            elif self.order_by in ('id', 'title'):
+                queryset = queryset.order_by(self.order_by)
+            elif hasattr(queryset.model, 'api_fields') and self.order_by in queryset.model.api_fields:
+                # Make sure that the field is a django field
+                try:
+                    field = obj._meta.get_field_by_name(field_name)[0]
+
+                    queryset = queryset.order_by(self.order_by)
+                except:
+                    pass
 
         # Search
         if self.search_query:
@@ -68,6 +84,9 @@ class PageListingFilters(object):
 
         if self.model_name:
             query_params['type'] = self.model_name
+
+        if self.order_by:
+            query_params['order'] = self.order_by
 
         if self.search_query:
             query_params['search'] = self.search_query
