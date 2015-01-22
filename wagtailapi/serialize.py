@@ -1,9 +1,10 @@
 from django.db import models
+from django.utils.encoding import force_text
 
 from wagtail.wagtailcore.models import Page
 
 
-def get_api_data(obj):
+def get_api_data(obj, show_child_relations=False):
     # Find any child relations (pages only)
     child_relations = {}
     if isinstance(obj, Page):
@@ -16,6 +17,9 @@ def get_api_data(obj):
     for field_name in obj.api_fields:
         # Check child relations
         if field_name in child_relations and hasattr(child_relations[field_name], 'api_fields'):
+            if not show_child_relations:
+                continue
+
             yield field_name, [
                 dict(get_api_data(child_object))
                 for child_object in getattr(obj, field_name).all()
@@ -36,23 +40,21 @@ def get_api_data(obj):
             if hasattr(value, '__call__'):
                 value = value()
 
-            yield field_name, value
+            yield field_name, force_text(value, strings_only=True)
             continue
 
 
-def serialize_page(page):
-    specific_class = page.specific_class
-
+def serialize_page(page, show_child_relations=False):
     # Create a basic document that describes the page
     data = {
         'id': page.id,
         'title': page.title,
-        'type': specific_class._meta.app_label + '.' + specific_class.__name__,
+        'type': page.specific_class._meta.app_label + '.' + page.specific_class.__name__,
     }
 
-    if hasattr(specific_class, 'api_fields'):
+    if hasattr(page, 'api_fields'):
         # Add detail data
-        data.update(dict(get_api_data(page.specific)))
+        data.update(dict(get_api_data(page, show_child_relations=show_child_relations)))
 
     return data
 

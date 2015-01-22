@@ -168,7 +168,7 @@ def page_listing(request):
 
 def page_detail(request, pk):
     page = get_object_or_404(get_base_queryset(request), pk=pk).specific
-    data = serialize.serialize_page(page)
+    data = serialize.serialize_page(page, show_child_relations=True)
 
     return json_response(data)
 
