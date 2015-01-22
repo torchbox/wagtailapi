@@ -121,10 +121,7 @@ def page_listing(request):
     stop = offset + limit
     results = queryset[start:stop]
 
-    return json_response({
-        'count': queryset.count(),
-        'results': list(results),
-    })
+    return json_response(list(results))
 
 
 @format_api_exceptions
