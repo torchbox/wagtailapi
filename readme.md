@@ -52,6 +52,21 @@ Once installed, you then need to add ``wagtailapi`` to ``INSTALLED_APPS`` in you
 Configuration
 -------------
 
+### Settings
+
+``WAGTAILAPI_BASE_URL`` (required)
+
+*Not implemented*
+
+``WAGTAILAPI_SEARCH_ENABLED`` (default: True)
+
+*Not implemented*
+
+``WAGTAILAPI_MAX_RESULTS`` (default: 100)
+
+*Not implemented*
+
+
 ### Adding more fields to pages
 
 By Default, the pages endpoint only includes the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
