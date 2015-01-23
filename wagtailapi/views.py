@@ -17,7 +17,6 @@ from wagtail.wagtaildocs.models import Document
 from wagtail.wagtailcore.utils import resolve_model_string
 
 from . import serialize
-from .json import WagtailAPIJSONEncoder
 
 
 class BadAPIRequestError(Exception):
@@ -35,7 +34,7 @@ def get_base_queryset(request, model=Page):
 
 def json_response(data, cls=HttpResponse):
     return cls(
-        json.dumps(data, cls=WagtailAPIJSONEncoder, indent=4),
+        json.dumps(data, indent=4),
         content_type='application/json'
     )
 
