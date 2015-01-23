@@ -154,39 +154,36 @@ def image_listing(request):
     queryset = get_image_model().objects.all()
 
     # Pagination
-    page_number = parse_int(request.GET.get('page', 1), 'page')
-    paginator = Paginator(queryset, 10)
-    try:
-        results = paginator.page(page_number)
-    except EmptyPage:
-        raise Http404("This page has no results")
+    offset = int(request.GET.get('offset', 0))
+    limit = int(request.GET.get('limit', 20))
 
-    # Response data
-    data = {
-        'count': results.paginator.count,
-        'results': list(results.object_list),
-        'previous': None,
-        'next': None,
-    }
+    start = offset
+    stop = offset + limit
+    results = queryset[start:stop]
 
-    # Next/previous urls
-    if results.has_next():
-        query_params = {}
-        query_params['page'] = results.next_page_number()
-        data['next'] = request.path + '?' + urllib.urlencode(query_params)
+    # Get list of fields to show in results
+    if 'fields' in request.GET:
+        fields = request.GET['fields'].split(',')
+    else:
+        fields = ('title', )
 
-    if results.has_previous():
-        query_params = {}
-        query_params['page'] = results.previous_page_number()
-        data['previous'] = request.path + '?' + urllib.urlencode(query_params)
-
-    return json_response(data)
+    return json_response(
+        OrderedDict([
+            ('meta', OrderedDict([
+                ('total_count', queryset.count()),
+            ])),
+            ('pages', [
+                serialize.serialize_image(result, fields=fields)
+                for result in results
+            ]),
+        ])
+    )
 
 
 @format_api_exceptions
 def image_detail(request, pk):
     image = get_object_or_404(get_image_model(), pk=pk)
-    data = serialize.serialize_image(image)
+    data = serialize.serialize_image(image, all_fields=True)
 
     return json_response(data)
 
@@ -196,38 +193,35 @@ def document_listing(request):
     queryset = Document.objects.all()
 
     # Pagination
-    page_number = parse_int(request.GET.get('page', 1), 'page')
-    paginator = Paginator(queryset, 10)
-    try:
-        results = paginator.page(page_number)
-    except EmptyPage:
-        raise Http404("This page has no results")
+    offset = int(request.GET.get('offset', 0))
+    limit = int(request.GET.get('limit', 20))
 
-    # Response data
-    data = {
-        'count': results.paginator.count,
-        'results': list(results.object_list),
-        'previous': None,
-        'next': None,
-    }
+    start = offset
+    stop = offset + limit
+    results = queryset[start:stop]
 
-    # Next/previous urls
-    if results.has_next():
-        query_params = {}
-        query_params['page'] = results.next_page_number()
-        data['next'] = request.path + '?' + urllib.urlencode(query_params)
+    # Get list of fields to show in results
+    if 'fields' in request.GET:
+        fields = request.GET['fields'].split(',')
+    else:
+        fields = ('title', )
 
-    if results.has_previous():
-        query_params = {}
-        query_params['page'] = results.previous_page_number()
-        data['previous'] = request.path + '?' + urllib.urlencode(query_params)
-
-    return json_response(data)
+    return json_response(
+        OrderedDict([
+            ('meta', OrderedDict([
+                ('total_count', queryset.count()),
+            ])),
+            ('documents', [
+                serialize.serialize_document(result)
+                for result in results
+            ]),
+        ])
+    )
 
 
 @format_api_exceptions
 def document_detail(request, pk):
     document = get_object_or_404(Document, pk=pk)
-    data = serialize.serialize_image(document)
+    data = serialize.serialize_document(document)
 
     return json_response(data)
