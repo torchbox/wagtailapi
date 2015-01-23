@@ -58,8 +58,8 @@ def serialize_page(page, fields=('title', ), all_fields=False, parent_id=False):
         ('meta', OrderedDict(metadata)),
     ]
 
-    if hasattr(page.specific_class, 'api_fields'):
-        api_fields = ('title', ) + tuple(page.specific_class.api_fields)
+    if hasattr(page, 'api_fields'):
+        api_fields = ('title', ) + tuple(page.api_fields)
         if all_fields:
             # Show all possible fields
             fields = api_fields
