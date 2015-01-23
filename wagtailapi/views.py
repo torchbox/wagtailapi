@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import json
 import urllib
 from functools import wraps
+from collections import OrderedDict
 
 from django_filters.filterset import filterset_factory
 
@@ -23,107 +24,6 @@ class BadAPIRequestError(Exception):
     pass
 
 
-def parse_int(i, field_name):
-    if i:
-        try:
-            return int(i)
-        except ValueError:
-            raise BadAPIRequestError("%s must be an integer (got: '%s')" % (field_name, i))
-
-
-class PageListingFilters(object):
-    def __init__(self, filters):
-        self.model_name = filters.pop('type', None)
-        self.page_number = parse_int(filters.pop('page', 1), 'page')
-        self.search_query = filters.pop('search', '')
-        self.order_by = filters.pop('order', '')
-
-        self.child_of = parse_int(filters.pop('child_of', None), 'child_of')
-
-        self.filters = filters
-
-    @classmethod
-    def from_request(cls, request):
-        return cls(dict(request.GET.iteritems()))
-
-    def get_model(self):
-        if self.model_name:
-            try:
-                return resolve_model_string(self.model_name)
-            except LookupError:
-                raise Http404("Could not find page type: %s" % self.model_name)
-        else:
-            return Page
-
-    def filter_queryset(self, queryset):
-        # Find filterset class
-        if hasattr(queryset.model, 'api_filterset_class'):
-            filterset_class = queryset.model.filterset_class
-        else:
-            filterset_class = filterset_factory(queryset.model)
-
-        # Run field filters
-        queryset = filterset_class(self.filters, queryset=queryset).qs
-
-        # Child of filter
-        if self.child_of:
-            try:
-                parent_page = Page.objects.get(id=self.child_of)
-                queryset = queryset.child_of(parent_page)
-            except Page.DoesNotExist:
-                raise Http404("Parent page doesn't exist")
-
-        # Ordering
-        if self.order_by:
-            if self.order_by == 'random':
-                 queryset = queryset.order_by('?')
-            elif self.order_by in ('id', 'title'):
-                queryset = queryset.order_by(self.order_by)
-            elif hasattr(queryset.model, 'api_fields') and self.order_by in queryset.model.api_fields:
-                # Make sure that the field is a django field
-                try:
-                    field = obj._meta.get_field_by_name(field_name)[0]
-
-                    queryset = queryset.order_by(self.order_by)
-                except:
-                    pass
-
-        # Search
-        if self.search_query:
-            queryset = queryset.search(self.search_query)
-
-        # Pagination
-        paginator = Paginator(queryset, 10)
-        try:
-            results = paginator.page(self.page_number)
-        except EmptyPage:
-            raise Http404("This page has no results")
-
-        return results
-
-    def get_query_params(self):
-        query_params = {}
-
-        if self.page_number and self.page_number != 1:
-            query_params['page'] = self.page_number
-
-        if self.model_name:
-            query_params['type'] = self.model_name
-
-        if self.order_by:
-            query_params['order'] = self.order_by
-
-        if self.child_of:
-            query_params['child_of'] = self.child_of
-
-        if self.search_query:
-            query_params['search'] = self.search_query
-
-        query_params.update(self.filters)
-
-        return query_params
-
-
 def get_base_queryset(request, model=Page):
     queryset = model.objects.public().live()
 
@@ -135,7 +35,7 @@ def get_base_queryset(request, model=Page):
 
 def json_response(data, cls=HttpResponse):
     return cls(
-        json.dumps(data, cls=WagtailAPIJSONEncoder, sort_keys=True, indent=4),
+        json.dumps(data, cls=WagtailAPIJSONEncoder, indent=4),
         content_type='application/json'
     )
 
@@ -159,36 +59,92 @@ def format_api_exceptions(view):
 
 @format_api_exceptions
 def page_listing(request):
-    filters = PageListingFilters.from_request(request)
-    queryset = get_base_queryset(request, model=filters.get_model())
-    results = filters.filter_queryset(queryset)
+    # Get model
+    if 'type' in request.GET:
+        model_name = request.GET['type']
 
-    # Response data
-    data = {
-        'count': results.paginator.count,
-        'results': list(results.object_list),
-        'previous': None,
-        'next': None,
-    }
+        try:
+            model = resolve_model_string(model_name)
+        except LookupError:
+            raise Http404("Type doesn't exist")
+    else:
+        model = Page
 
-    # Next/previous urls
-    if results.has_next():
-        query_params = filters.get_query_params()
-        query_params['page'] = results.next_page_number()
-        data['next'] = request.path + '?' + urllib.urlencode(query_params)
+    # Get queryset
+    queryset = get_base_queryset(request, model=model)
 
-    if results.has_previous():
-        query_params = filters.get_query_params()
-        query_params['page'] = results.previous_page_number()
-        data['previous'] = request.path + '?' + urllib.urlencode(query_params)
+    # Find filterset class
+    if hasattr(queryset.model, 'api_filterset_class'):
+        filterset_class = queryset.model.filterset_class
+    else:
+        filterset_class = filterset_factory(queryset.model)
 
-    return json_response(data)
+    # Run field filters
+    queryset = filterset_class(request.GET, queryset=queryset).qs
+
+    # Child of filter
+    if 'child_of' in request.GET:
+        parent_page_id = request.GET['child_of']
+
+        try:
+            parent_page = Page.objects.get(id=parent_page_id)
+            queryset = queryset.child_of(parent_page)
+        except Page.DoesNotExist:
+            raise Http404("Parent page doesn't exist")
+
+    # Ordering
+    if 'order' in request.GET:
+        order_by = request.GET['order']
+
+        if order_by == 'random':
+             queryset = queryset.order_by('?')
+        elif order_by in ('id', 'title'):
+            queryset = queryset.order_by(order_by)
+        elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
+            # Make sure that the field is a django field
+            try:
+                field = obj._meta.get_field_by_name(field_name)[0]
+
+                queryset = queryset.order_by(order_by)
+            except:
+                pass
+
+    # Search
+    if 'search' in request.GET:
+        search_query = request.GET['search']
+        queryset = queryset.search(search_query)
+
+    # Pagination
+    offset = int(request.GET.get('offset', 0))
+    limit = int(request.GET.get('limit', 20))
+
+    start = offset
+    stop = offset + limit
+    results = queryset[start:stop]
+
+    # Get list of fields to show in results
+    if 'fields' in request.GET:
+        fields = request.GET['fields'].split(',')
+    else:
+        fields = ('title', )
+
+    return json_response(
+        OrderedDict([
+            ('meta', OrderedDict([
+                ('total_count', queryset.count()),
+            ])),
+            ('pages', [
+                serialize.serialize_page(result, fields=fields)
+                for result in results
+            ]),
+        ])
+    )
 
 
 @format_api_exceptions
 def page_detail(request, pk):
     page = get_object_or_404(get_base_queryset(request), pk=pk).specific
-    data = serialize.serialize_page(page, show_child_relations=True)
+    data = serialize.serialize_page(page, all_fields=True, parent_id=True)
 
     return json_response(data)
 
