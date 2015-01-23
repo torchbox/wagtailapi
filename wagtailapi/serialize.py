@@ -58,8 +58,8 @@ def serialize_page(page, fields=('title', ), all_fields=False, parent_id=False):
         ('meta', OrderedDict(metadata)),
     ]
 
-    if hasattr(page.specific_class, 'api_fields'):
-        api_fields = ('title', ) + tuple(page.specific_class.api_fields)
+    if hasattr(page, 'api_fields'):
+        api_fields = ('title', ) + tuple(page.api_fields)
         if all_fields:
             # Show all possible fields
             fields = api_fields
@@ -73,15 +73,28 @@ def serialize_page(page, fields=('title', ), all_fields=False, parent_id=False):
 
 
 def serialize_document(document):
-    return {
-        'id': document.id,
-        'title': document.title,
-        'download_url': document.url,
-    }
+    return OrderedDict([
+        ('id', document.id),
+        ('title', document.title),
+        ('download_url', document.url),
+    ])
 
 
-def serialize_image(image):
-    return {
-        'id': image.id,
-        'title': image.title,
-    }
+def serialize_image(image, fields=('title', ), all_fields=False):
+    # Build data document
+    data = [
+        ('id', image.id),
+    ]
+
+    if hasattr(image, 'api_fields'):
+        api_fields = ('title', ) + tuple(image.api_fields)
+        if all_fields:
+            # Show all possible fields
+            fields = api_fields
+        else:
+            # Remove any fields that are not defined in "api_fields"
+            fields = [field for field in fields if field in api_fields]
+
+    data.extend(get_api_data(image, fields))
+
+    return OrderedDict(data)
