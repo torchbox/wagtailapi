@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import json
 import urllib
 from functools import wraps
+from collections import OrderedDict
 
 from django_filters.filterset import filterset_factory
 
@@ -127,16 +128,23 @@ def page_listing(request):
     else:
         fields = ('title', )
 
-    return json_response([
-        serialize.serialize_page(result, fields=fields)
-        for result in results
-    ])
+    return json_response(
+        OrderedDict([
+            ('meta', OrderedDict([
+                ('total_count', queryset.count()),
+            ])),
+            ('pages', [
+                serialize.serialize_page(result, fields=fields)
+                for result in results
+            ]),
+        ])
+    )
 
 
 @format_api_exceptions
 def page_detail(request, pk):
     page = get_object_or_404(get_base_queryset(request), pk=pk).specific
-    data = serialize.serialize_page(page, all_fields=True)
+    data = serialize.serialize_page(page, all_fields=True, parent_id=True)
 
     return json_response(data)
 

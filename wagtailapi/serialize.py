@@ -43,11 +43,19 @@ def get_api_data(obj, fields):
             continue
 
 
-def serialize_page(page, fields=('title', ), all_fields=False):
-    # Create a basic document that describes the page
+def serialize_page(page, fields=('title', ), all_fields=False, parent_id=False):
+    # Build metadata document
+    metadata = [
+        ('type', page.specific_class._meta.app_label + '.' + page.specific_class.__name__),
+    ]
+
+    if parent_id:
+        metadata.append(('parent_id', page.get_parent().id))
+
+    # Build data document
     data = [
         ('id', page.id),
-        ('type', page.specific_class._meta.app_label + '.' + page.specific_class.__name__),
+        ('meta', OrderedDict(metadata)),
     ]
 
     if hasattr(page.specific_class, 'api_fields'):
