@@ -121,13 +121,22 @@ def page_listing(request):
     stop = offset + limit
     results = queryset[start:stop]
 
-    return json_response(list(results))
+    # Get list of fields to show in results
+    if 'fields' in request.GET:
+        fields = request.GET['fields'].split(',')
+    else:
+        fields = ('title', )
+
+    return json_response([
+        serialize.serialize_page(result, fields=fields)
+        for result in results
+    ])
 
 
 @format_api_exceptions
 def page_detail(request, pk):
     page = get_object_or_404(get_base_queryset(request), pk=pk).specific
-    data = serialize.serialize_page(page, show_child_relations=True)
+    data = serialize.serialize_page(page, all_fields=True)
 
     return json_response(data)
 

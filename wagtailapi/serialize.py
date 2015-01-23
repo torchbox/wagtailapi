@@ -4,7 +4,7 @@ from django.utils.encoding import force_text
 from wagtail.wagtailcore.models import Page
 
 
-def get_api_data(obj, show_child_relations=False):
+def get_api_data(obj, fields):
     # Find any child relations (pages only)
     child_relations = {}
     if isinstance(obj, Page):
@@ -14,14 +14,11 @@ def get_api_data(obj, show_child_relations=False):
         }
 
     # Loop through fields
-    for field_name in obj.api_fields:
+    for field_name in fields:
         # Check child relations
         if field_name in child_relations and hasattr(child_relations[field_name], 'api_fields'):
-            if not show_child_relations:
-                continue
-
             yield field_name, [
-                dict(get_api_data(child_object))
+                dict(get_api_data(child_object, child_relations[field_name].api_fields))
                 for child_object in getattr(obj, field_name).all()
             ]
             continue
@@ -44,17 +41,23 @@ def get_api_data(obj, show_child_relations=False):
             continue
 
 
-def serialize_page(page, show_child_relations=False):
+def serialize_page(page, fields=('title', ), all_fields=False):
     # Create a basic document that describes the page
     data = {
         'id': page.id,
-        'title': page.title,
         'type': page.specific_class._meta.app_label + '.' + page.specific_class.__name__,
     }
 
-    if hasattr(page, 'api_fields'):
-        # Add detail data
-        data.update(dict(get_api_data(page, show_child_relations=show_child_relations)))
+    if hasattr(page.specific_class, 'api_fields'):
+        api_fields = tuple(page.specific_class.api_fields) + ('title', )
+        if all_fields:
+            # Show all possible fields
+            fields = api_fields
+        else:
+            # Make sure fields only contains fields that are defined in cls.api_fields
+            fields = tuple(set(fields).intersection(set(api_fields)))
+
+    data.update(dict(get_api_data(page, fields)))
 
     return data
 
