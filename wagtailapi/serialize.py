@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from django.db import models
 from django.utils.encoding import force_text
 
@@ -43,23 +45,23 @@ def get_api_data(obj, fields):
 
 def serialize_page(page, fields=('title', ), all_fields=False):
     # Create a basic document that describes the page
-    data = {
-        'id': page.id,
-        'type': page.specific_class._meta.app_label + '.' + page.specific_class.__name__,
-    }
+    data = [
+        ('id', page.id),
+        ('type', page.specific_class._meta.app_label + '.' + page.specific_class.__name__),
+    ]
 
     if hasattr(page.specific_class, 'api_fields'):
-        api_fields = tuple(page.specific_class.api_fields) + ('title', )
+        api_fields = ('title', ) + tuple(page.specific_class.api_fields)
         if all_fields:
             # Show all possible fields
             fields = api_fields
         else:
-            # Make sure fields only contains fields that are defined in cls.api_fields
-            fields = tuple(set(fields).intersection(set(api_fields)))
+            # Remove any fields that are not defined in "api_fields"
+            fields = [field for field in fields if field in api_fields]
 
-    data.update(dict(get_api_data(page, fields)))
+    data.extend(get_api_data(page, fields))
 
-    return data
+    return OrderedDict(data)
 
 
 def serialize_document(document):

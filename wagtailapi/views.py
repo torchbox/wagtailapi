@@ -34,7 +34,7 @@ def get_base_queryset(request, model=Page):
 
 def json_response(data, cls=HttpResponse):
     return cls(
-        json.dumps(data, cls=WagtailAPIJSONEncoder, sort_keys=True, indent=4),
+        json.dumps(data, cls=WagtailAPIJSONEncoder, indent=4),
         content_type='application/json'
     )
 
