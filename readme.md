@@ -3,6 +3,14 @@ Wagtail API module
 
 The ``wagtailapi`` module can be used to create a simple, read-only, JSON-based API for viewing your Wagtail content.
 
+There are three endpoints to the API:
+
+* **Pages:** ``/api/v1/pages/``
+* **Images:** ``/api/v1/images/``
+* **Documents:** ``/api/v1/documents/``
+
+See [the API documentation](http://docs.wagtailapi.apiary.io/) for more information on how to use the API.
+
 
 **Warning:** This module is experimental and likely to change in backwards incompatible ways. Once finished, it will be merged into Wagtail as a new contrib app.
 
@@ -41,171 +49,41 @@ Once installed, you then need to add ``wagtailapi`` to ``INSTALLED_APPS`` in you
 ```
 
 
+Configuration
+-------------
 
-Basic Usage
------------
+### Adding more fields to pages
 
-### Listing pages
+By Default, pages only include the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
 
-This view should list all live pages in your project that are not in a private section.
+You can add more fields to the pages API by setting an attribute called ``api_fields`` to a list/tuple of field names to add to the API.
 
-Example:
+Example:  
 
-```
-    > http http://localhost:8000/api/v1/pages/
-    
-    HTTP/1.0 200 OK
+```python
+    class BlogPage(Page):  
+        posted_by = models.CharField()
+        posted_at = models.DateTimeField()
+        content = RichTextField()
 
-    {
-        "count": 19, 
-        "next": "/api/v1/pages/?page=2", 
-        "results": [
-            {
-                "id": 2, 
-                "title": "Home page", 
-                "type": "demo.HomePage"
-            }, 
-            {
-                "id": 4, 
-                "title": "Events index", 
-                "type": "demo.EventIndexPage"
-            }, 
-            {
-                "id": 5, 
-                "title": "Blog index", 
-                "type": "demo.BlogIndexPage"
-            }, 
-            {
-                "id": 16, 
-                "title": "Blog post", 
-                "type": "demo.BlogPage"
-            }, 
-            {
-                "id": 18, 
-                "title": "Blog post again", 
-                "type": "demo.BlogPage"
-            }, 
-            {
-                "id": 19, 
-                "title": "Another blog post", 
-                "type": "demo.BlogPage"
-            }
-        ]
-    }
+        api_fields = ('posted_by', 'posted_at', 'content')
 ```
 
 
-### Viewing details about an individual page
+You can also add child objects to your API:
 
 
-Example
+```python
+    class BlogPageRelatedLink(Orderable):
+        page = ParentalKey('BlogPage', related_name='related_links')
+        link = models.URLField()
 
-```
-    > http http://localhost:8000/api/v1/pages/16/
-
-    HTTP/1.0 200 OK
-    
-    {
-        "id": 16, 
-        "title": "Blog post", 
-        "type": "demo.BlogPage"
-    }
-```
-
-
-Adding more data
-----------------
-
-In the above examples, the JSON documents only contain ``id``, ``type`` and ``title`` fields. In most cases, this isn't very useful.
-
-To add more fields to the JSON documents, add an ``api_fields`` attribute to your page model set to a list/tuple of names of fields to include in the JSON document.
-
-
-Example:
-
-```
-    # models.py
+        api_fields = ('link', )
 
     class BlogPage(Page):  
         posted_by = models.CharField()
         posted_at = models.DateTimeField()
+        content = RichTextField()
 
-        api_fields = ('posted_by', 'posted_at')
+        api_fields = ('posted_by', 'posted_at', 'content', 'related_links')
 ```
-
-```
-    > http http://localhost:8000/api/v1/pages/?type=demo.BlogPage
-
-    HTTP/1.0 200 OK
-    
-    {
-        "count": 3, 
-        "results": [
-            {
-                "id": 16, 
-                "title": "Blog post", 
-                "type": "demo.BlogPage",
-                "posted_by": "Tom",
-                "posted_at": "2014-01-21 12:30:00"
-            }, 
-            {
-                "id": 18, 
-                "title": "Blog post again", 
-                "type": "demo.BlogPage",
-                "posted_by": "Dick",
-                "posted_at": "2014-01-22 17:00:00"
-            }, 
-            {
-                "id": 19, 
-                "title": "Another blog post", 
-                "type": "demo.BlogPage",
-                "posted_by": "Harry",
-                "posted_at": "2014-01-23 11:45:00"
-            }
-        ]
-    }
-```
-
-
-Filtering, ordering and Searching
----------------------------------
-
-### Filtering by field values
-
-
-### Filtering by page type
-
-Add ``type?app_label.ModelName`` to the request.
-
-### Filtering by tree position
-
-**NOT YET IMPLEMENTED**
-
-You can also filter by a pages tree position. This lets you find the decendants, siblings and ancestors of any other page.
-
-#### ``descendant_of``
-
-#### ``child_of``
-
-#### ``ancestor_of``
-
-#### ``parent_of``
-
-#### ``sibling_of``
-
-
-### Ordering
-
-**NOT YET IMPLEMENTED**
-
-
-#### ``order_by``
-
-### Searching
-
-Full text searching is also supported. Just add ``?search=Search query here`` on any listing.
-
-
-Images and Documents
---------------------
-
