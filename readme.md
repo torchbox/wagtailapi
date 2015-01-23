@@ -54,11 +54,9 @@ Configuration
 
 ### Adding more fields to pages
 
-By Default, pages only include the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
+By Default, the pages endpoint only includes the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
 
-You can add more fields to the pages API by setting an attribute called ``api_fields`` to a list/tuple of field names to add to the API.
-
-Example:  
+You can add more fields to the pages endpoint by setting an attribute called ``api_fields`` to a list/tuple of field names:
 
 ```python
     class BlogPage(Page):  
@@ -70,8 +68,7 @@ Example:
 ```
 
 
-You can also add child objects to your API:
-
+This list also supports child relations (which will be nested inside returned JSON document):
 
 ```python
     class BlogPageRelatedLink(Orderable):
