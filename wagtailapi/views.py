@@ -15,6 +15,7 @@ from wagtail.wagtailcore.models import Page
 from wagtail.wagtailimages.models import get_image_model
 from wagtail.wagtaildocs.models import Document
 from wagtail.wagtailcore.utils import resolve_model_string
+from wagtail.wagtailsearch.backends import get_search_backend
 
 from . import serialize
 
@@ -152,6 +153,38 @@ def page_detail(request, pk):
 def image_listing(request):
     queryset = get_image_model().objects.all()
 
+    # Find filterset class
+    if hasattr(queryset.model, 'api_filterset_class'):
+        filterset_class = queryset.model.filterset_class
+    else:
+        filterset_class = filterset_factory(queryset.model)
+
+    # Run field filters
+    queryset = filterset_class(request.GET, queryset=queryset).qs
+
+    # Ordering
+    if 'order' in request.GET:
+        order_by = request.GET['order']
+
+        if order_by == 'random':
+             queryset = queryset.order_by('?')
+        elif order_by in ('id', 'title'):
+            queryset = queryset.order_by(order_by)
+        elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
+            # Make sure that the field is a django field
+            try:
+                field = obj._meta.get_field_by_name(field_name)[0]
+
+                queryset = queryset.order_by(order_by)
+            except:
+                pass
+
+    # Search
+    if 'search' in request.GET:
+        search_query = request.GET['search']
+        s = get_search_backend()
+        queryset = s.search(search_query, queryset)
+
     # Pagination
     offset = int(request.GET.get('offset', 0))
     limit = int(request.GET.get('limit', 20))
@@ -191,6 +224,25 @@ def image_detail(request, pk):
 def document_listing(request):
     queryset = Document.objects.all()
 
+    # Run field filters
+    filterset_class = filterset_factory(queryset.model)
+    queryset = filterset_class(request.GET, queryset=queryset).qs
+
+    # Ordering
+    if 'order' in request.GET:
+        order_by = request.GET['order']
+
+        if order_by == 'random':
+             queryset = queryset.order_by('?')
+        elif order_by in ('id', 'title'):
+            queryset = queryset.order_by(order_by)
+
+    # Search
+    if 'search' in request.GET:
+        search_query = request.GET['search']
+        s = get_search_backend()
+        queryset = s.search(search_query, queryset)
+
     # Pagination
     offset = int(request.GET.get('offset', 0))
     limit = int(request.GET.get('limit', 20))
@@ -198,12 +250,6 @@ def document_listing(request):
     start = offset
     stop = offset + limit
     results = queryset[start:stop]
-
-    # Get list of fields to show in results
-    if 'fields' in request.GET:
-        fields = request.GET['fields'].split(',')
-    else:
-        fields = ('title', )
 
     return json_response(
         OrderedDict([
