@@ -114,8 +114,17 @@ def page_listing(request):
         queryset = queryset.search(search_query)
 
     # Pagination
-    offset = int(request.GET.get('offset', 0))
-    limit = int(request.GET.get('limit', 20))
+    try:
+        offset = int(request.GET.get('offset', 0))
+        assert offset >= 0
+    except (ValueError, AssertionError):
+        raise BadAPIRequestError("offset must be a positive integer")
+
+    try:
+        limit = int(request.GET.get('limit', 20))
+        assert limit >= 0
+    except (ValueError, AssertionError):
+        raise BadAPIRequestError("limit must be a positive integer")
 
     start = offset
     stop = offset + limit
@@ -183,8 +192,17 @@ def image_listing(request):
         queryset = s.search(search_query, queryset)
 
     # Pagination
-    offset = int(request.GET.get('offset', 0))
-    limit = int(request.GET.get('limit', 20))
+    try:
+        offset = int(request.GET.get('offset', 0))
+        assert offset >= 0
+    except (ValueError, AssertionError):
+        raise BadAPIRequestError("offset must be a positive integer")
+
+    try:
+        limit = int(request.GET.get('limit', 20))
+        assert limit >= 0
+    except (ValueError, AssertionError):
+        raise BadAPIRequestError("limit must be a positive integer")
 
     start = offset
     stop = offset + limit
@@ -239,8 +257,17 @@ def document_listing(request):
         queryset = s.search(search_query, queryset)
 
     # Pagination
-    offset = int(request.GET.get('offset', 0))
-    limit = int(request.GET.get('limit', 20))
+    try:
+        offset = int(request.GET.get('offset', 0))
+        assert offset >= 0
+    except (ValueError, AssertionError):
+        raise BadAPIRequestError("offset must be a positive integer")
+
+    try:
+        limit = int(request.GET.get('limit', 20))
+        assert limit >= 0
+    except (ValueError, AssertionError):
+        raise BadAPIRequestError("limit must be a positive integer")
 
     start = offset
     stop = offset + limit

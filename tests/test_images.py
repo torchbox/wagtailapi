@@ -147,12 +147,12 @@ class TestImageListing(TestCase):
         # The total count must not be affected by "limit"
         self.assertEqual(content['meta']['total_count'], get_image_model().objects.count())
 
-    @unittest.expectedFailure
     def test_limit_not_integer_gives_error(self):
         response = self.get_response(limit='abc')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "limit must be a positive integer"})
 
 
     # OFFSET
@@ -176,12 +176,12 @@ class TestImageListing(TestCase):
         # The total count must not be affected by "offset"
         self.assertEqual(content['meta']['total_count'], get_image_model().objects.count())
 
-    @unittest.expectedFailure
     def test_offset_not_integer_gives_error(self):
         response = self.get_response(offset='abc')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "offset must be a positive integer"})
 
 
     # SEARCH
