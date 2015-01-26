@@ -97,9 +97,7 @@ def page_listing(request):
     if 'order' in request.GET:
         order_by = request.GET['order']
 
-        if order_by == 'random':
-             queryset = queryset.order_by('?')
-        elif order_by in ('id', 'title'):
+        if order_by in ('id', 'title'):
             queryset = queryset.order_by(order_by)
         elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
             # Make sure that the field is a django field
@@ -167,9 +165,7 @@ def image_listing(request):
     if 'order' in request.GET:
         order_by = request.GET['order']
 
-        if order_by == 'random':
-             queryset = queryset.order_by('?')
-        elif order_by in ('id', 'title'):
+        if order_by in ('id', 'title'):
             queryset = queryset.order_by(order_by)
         elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
             # Make sure that the field is a django field
@@ -233,9 +229,7 @@ def document_listing(request):
     if 'order' in request.GET:
         order_by = request.GET['order']
 
-        if order_by == 'random':
-             queryset = queryset.order_by('?')
-        elif order_by in ('id', 'title'):
+        if order_by in ('id', 'title'):
             queryset = queryset.order_by(order_by)
 
     # Search
