@@ -10,6 +10,7 @@ from django_filters.filterset import filterset_factory
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage
+from django.core.serializers.json import DjangoJSONEncoder
 
 from wagtail.wagtailcore.models import Page
 from wagtail.wagtailimages.models import get_image_model
@@ -35,7 +36,7 @@ def get_base_queryset(request, model=Page):
 
 def json_response(data, cls=HttpResponse):
     return cls(
-        json.dumps(data, indent=4),
+        json.dumps(data, indent=4, cls=DjangoJSONEncoder),
         content_type='application/json'
     )
 
