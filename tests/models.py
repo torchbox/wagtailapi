@@ -43,6 +43,8 @@ class AbstractLinkFields(models.Model):
         else:
             return self.link_external
 
+    api_fields = ('link', )
+
     panels = [
         FieldPanel('link_external'),
         PageChooserPanel('link_page'),
@@ -55,6 +57,8 @@ class AbstractLinkFields(models.Model):
 
 class AbstractRelatedLink(AbstractLinkFields):
     title = models.CharField(max_length=255, help_text="Link title")
+
+    api_fields = ('title', ) + AbstractLinkFields.api_fields
 
     panels = [
         FieldPanel('title'),
@@ -76,6 +80,12 @@ class AbstractCarouselItem(AbstractLinkFields):
     embed_url = models.URLField("Embed URL", blank=True)
     caption = models.CharField(max_length=255, blank=True)
 
+    api_fields = (
+        'image',
+        'embed_url',
+        'caption',
+    ) + AbstractLinkFields.api_fields
+
     panels = [
         ImageChooserPanel('image'),
         FieldPanel('embed_url'),
@@ -95,6 +105,16 @@ class ContactFieldsMixin(models.Model):
     city = models.CharField(max_length=255, blank=True)
     country = models.CharField(max_length=255, blank=True)
     post_code = models.CharField(max_length=10, blank=True)
+
+    api_fields = (
+        'telephone',
+        'email',
+        'address_1',
+        'address_2',
+        'city',
+        'country',
+        'post_code',
+    )
 
     panels = [
         FieldPanel('telephone'),
@@ -117,6 +137,12 @@ class ContactFieldsMixin(models.Model):
 
 class HomePage(Page):
     body = RichTextField(blank=True)
+
+    api_fields = (
+        'body',
+        'carousel_items',
+        'related_links',
+    )
 
     search_fields = Page.search_fields + (
         index.SearchField('body'),
@@ -153,6 +179,14 @@ class StandardPage(Page):
         related_name='+'
     )
 
+    api_fields = (
+        'intro',
+        'body',
+        'feed_image',
+        'carousel_items',
+        'related_links',
+    )
+
     search_fields = Page.search_fields + (
         index.SearchField('intro'),
         index.SearchField('body'),
@@ -187,6 +221,12 @@ class StandardIndexPage(Page):
         related_name='+'
     )
 
+    api_fields = (
+        'intro',
+        'feed_image',
+        'related_links',
+    )
+
     search_fields = Page.search_fields + (
         index.SearchField('intro'),
     )
@@ -217,6 +257,15 @@ class BlogEntryPage(Page):
         blank=True,
         on_delete=models.SET_NULL,
         related_name='+'
+    )
+
+    api_fields = (
+        'body',
+        'tags',
+        'date',
+        'feed_image',
+        'carousel_items',
+        'related_links',
     )
 
     search_fields = Page.search_fields + (
@@ -252,6 +301,11 @@ BlogEntryPage.promote_panels = [
 
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
+
+    api_fields = (
+        'intro',
+        'related_links',
+    )
 
     search_fields = Page.search_fields + (
         index.SearchField('intro'),
@@ -329,6 +383,22 @@ class EventPage(Page):
         related_name='+'
     )
 
+    api_fields = (
+        'date_from',
+        'date_to',
+        'time_from',
+        'time_to',
+        'audience',
+        'location',
+        'body',
+        'cost',
+        'signup_link',
+        'feed_image',
+        'carousel_items',
+        'related_links',
+        'speakers',
+    )
+
     search_fields = Page.search_fields + (
         index.SearchField('get_audience_display'),
         index.SearchField('location'),
@@ -357,9 +427,11 @@ class EventPageSpeaker(Orderable, AbstractLinkFields):
         related_name='+'
     )
 
-    @property
-    def name_display(self):
-        return self.first_name + " " + self.last_name
+    api_fields = (
+        'first_name',
+        'last_name',
+        'image',
+    )
 
     panels = [
         FieldPanel('first_name'),
@@ -391,6 +463,11 @@ EventPage.promote_panels = [
 
 class EventIndexPage(Page):
     intro = RichTextField(blank=True)
+
+    api_fields = (
+        'intro',
+        'related_links',
+    )
 
     search_fields = Page.search_fields + (
         index.SearchField('intro'),
@@ -440,6 +517,16 @@ class PersonPage(Page, ContactFieldsMixin):
         related_name='+'
     )
 
+    api_fields = (
+        'first_name',
+        'last_name',
+        'intro',
+        'biography',
+        'image',
+        'feed_image',
+        'related_links',
+    ) + ContactFieldsMixin.api_fields
+
     search_fields = Page.search_fields + (
         index.SearchField('first_name'),
         index.SearchField('last_name'),
@@ -477,6 +564,11 @@ class ContactPage(Page, ContactFieldsMixin):
         on_delete=models.SET_NULL,
         related_name='+'
     )
+
+    api_fields = (
+        'body',
+        'feed_image',
+    ) + ContactFieldsMixin.api_fields
 
     search_fields = Page.search_fields + (
         index.SearchField('body'),
