@@ -58,14 +58,16 @@ def serialize_page(page, fields=('title', ), all_fields=False, parent_id=False):
         ('meta', OrderedDict(metadata)),
     ]
 
+    allowed_fields = ['title']
     if hasattr(page, 'api_fields'):
-        api_fields = ('title', ) + tuple(page.api_fields)
-        if all_fields:
-            # Show all possible fields
-            fields = api_fields
-        else:
-            # Remove any fields that are not defined in "api_fields"
-            fields = [field for field in fields if field in api_fields]
+        allowed_fields.extend(page.api_fields)
+
+    if all_fields:
+        # Show all possible fields
+        fields = allowed_fields
+    else:
+        # Remove any fields that are not defined in allowed_fields
+        fields = [field for field in fields if field in allowed_fields]
 
     data.extend(get_api_data(page, fields))
 
@@ -86,14 +88,16 @@ def serialize_image(image, fields=('title', ), all_fields=False):
         ('id', image.id),
     ]
 
+    allowed_fields = ['title', 'width', 'height']
     if hasattr(image, 'api_fields'):
-        api_fields = ('title', ) + tuple(image.api_fields)
-        if all_fields:
-            # Show all possible fields
-            fields = api_fields
-        else:
-            # Remove any fields that are not defined in "api_fields"
-            fields = [field for field in fields if field in api_fields]
+        allowed_fields.extend(image.api_fields)
+
+    if all_fields:
+        # Show all possible fields
+        fields = allowed_fields
+    else:
+        # Remove any fields that are not defined in allowed_fields
+        fields = [field for field in fields if field in allowed_fields]
 
     data.extend(get_api_data(image, fields))
 

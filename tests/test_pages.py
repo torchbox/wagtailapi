@@ -143,6 +143,13 @@ class TestPageListing(TestCase):
             self.assertEqual(page.keys(), set(['id', 'meta', 'title']))
 
     @unittest.expectedFailure
+    def test_extra_fields_which_are_not_in_api_fields_gives_error(self):
+        response = self.get_response(fields='path')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+
+    @unittest.expectedFailure
     def test_extra_fields_unknown_field_gives_error(self):
         response = self.get_response(fields='abc')
         content = json.loads(response.content.decode('UTF-8'))
