@@ -201,7 +201,7 @@ def image_listing(request):
             ('meta', OrderedDict([
                 ('total_count', queryset.count()),
             ])),
-            ('pages', [
+            ('images', [
                 serialize.serialize_image(result, fields=fields)
                 for result in results
             ]),
