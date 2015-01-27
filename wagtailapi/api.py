@@ -218,10 +218,8 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         # Search
         queryset = self.do_search(request, queryset)
 
-        # Get total count before pagination
-        total_count = queryset.count()
-
         # Pagination
+        total_count = queryset.count()
         queryset = self.do_pagination(request, queryset)
 
         # Get list of fields to show in results
@@ -288,10 +286,8 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
         # Search
         queryset = self.do_search(request, queryset)
 
-        # Get total count before pagination
-        total_count = queryset.count()
-
         # Pagination
+        total_count = queryset.count()
         queryset = self.do_pagination(request, queryset)
 
         # Get list of fields to show in results
@@ -339,10 +335,8 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
         # Search
         queryset = self.do_search(request, queryset)
 
-        # Get total count before pagination
-        total_count = queryset.count()
-
         # Pagination
+        total_count = queryset.count()
         queryset = self.do_pagination(request, queryset)
 
         return self.json_response(
