@@ -7,6 +7,8 @@ from collections import OrderedDict
 
 from django_filters.filterset import filterset_factory
 
+from django.db import models
+from django.utils.encoding import force_text
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage
@@ -19,7 +21,42 @@ from wagtail.wagtaildocs.models import Document
 from wagtail.wagtailcore.utils import resolve_model_string
 from wagtail.wagtailsearch.backends import get_search_backend
 
-from . import serialize
+
+def get_api_data(obj, fields):
+    # Find any child relations (pages only)
+    child_relations = {}
+    if isinstance(obj, Page):
+        child_relations = {
+            child_relation.field.rel.related_name: child_relation.model
+            for child_relation in obj._meta.child_relations
+        }
+
+    # Loop through fields
+    for field_name in fields:
+        # Check child relations
+        if field_name in child_relations and hasattr(child_relations[field_name], 'api_fields'):
+            yield field_name, [
+                dict(get_api_data(child_object, child_relations[field_name].api_fields))
+                for child_object in getattr(obj, field_name).all()
+            ]
+            continue
+
+        # Check django fields
+        try:
+            field = obj._meta.get_field_by_name(field_name)[0]
+            yield field_name, field._get_val_from_obj(obj)
+            continue
+        except (models.fields.FieldDoesNotExist, AttributeError):
+            pass
+
+        # Check attributes
+        if hasattr(obj, field_name):
+            value = getattr(obj, field_name)
+            if hasattr(value, '__call__'):
+                value = value()
+
+            yield field_name, force_text(value, strings_only=True)
+            continue
 
 
 class BaseAPIEndpoint(object):
@@ -71,6 +108,36 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         queryset = queryset.descendant_of(request.site.root_page, inclusive=True)
 
         return queryset
+
+    def serialize_page(self, page, fields=('title', ), all_fields=False, parent_id=False):
+        # Build metadata document
+        metadata = [
+            ('type', page.specific_class._meta.app_label + '.' + page.specific_class.__name__),
+        ]
+
+        if parent_id:
+            metadata.append(('parent_id', page.get_parent().id))
+
+        # Build data document
+        data = [
+            ('id', page.id),
+            ('meta', OrderedDict(metadata)),
+        ]
+
+        allowed_fields = ['title']
+        if hasattr(page, 'api_fields'):
+            allowed_fields.extend(page.api_fields)
+
+        if all_fields:
+            # Show all possible fields
+            fields = allowed_fields
+        else:
+            # Remove any fields that are not defined in allowed_fields
+            fields = [field for field in fields if field in allowed_fields]
+
+        data.extend(get_api_data(page, fields))
+
+        return OrderedDict(data)
 
     def listing_view(self, request):
         # Get model
@@ -155,7 +222,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
                     ('total_count', queryset.count()),
                 ])),
                 ('pages', [
-                    serialize.serialize_page(result, fields=fields)
+                    self.serialize_page(result, fields=fields)
                     for result in results
                 ]),
             ])
@@ -163,7 +230,8 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
 
     def detail_view(self, request, pk):
         page = get_object_or_404(self.get_queryset(request), pk=pk).specific
-        data = serialize.serialize_page(page, all_fields=True, parent_id=True)
+        data = self.serialize_page(page, all_fields=True, parent_id=True)
+
         return self.json_response(data)
 
 
@@ -172,6 +240,27 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
 
     def get_queryset(self, request):
         return self.model.objects.all()
+
+    def serialize_image(self, image, fields=('title', ), all_fields=False):
+        # Build data document
+        data = [
+            ('id', image.id),
+        ]
+
+        allowed_fields = ['title', 'width', 'height']
+        if hasattr(image, 'api_fields'):
+            allowed_fields.extend(image.api_fields)
+
+        if all_fields:
+            # Show all possible fields
+            fields = allowed_fields
+        else:
+            # Remove any fields that are not defined in allowed_fields
+            fields = [field for field in fields if field in allowed_fields]
+
+        data.extend(get_api_data(image, fields))
+
+        return OrderedDict(data)
 
     def listing_view(self, request):
         queryset = self.get_queryset(request)
@@ -235,7 +324,7 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
                     ('total_count', queryset.count()),
                 ])),
                 ('images', [
-                    serialize.serialize_image(result, fields=fields)
+                    self.serialize_image(result, fields=fields)
                     for result in results
                 ]),
             ])
@@ -243,12 +332,19 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
 
     def detail_view(self, request, pk):
         image = get_object_or_404(self.get_queryset(request), pk=pk)
-        data = serialize.serialize_image(image, all_fields=True)
+        data = self.serialize_image(image, all_fields=True)
 
         return self.json_response(data)
 
 
 class DocumentsAPIEndpoint(BaseAPIEndpoint):
+    def serialize_document(self, document):
+        return OrderedDict([
+            ('id', document.id),
+            ('title', document.title),
+            ('download_url', document.url),
+        ])
+
     def listing_view(self, request):
         queryset = Document.objects.all()
 
@@ -292,7 +388,7 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
                     ('total_count', queryset.count()),
                 ])),
                 ('documents', [
-                    serialize.serialize_document(result)
+                    self.serialize_document(result)
                     for result in results
                 ]),
             ])
@@ -300,6 +396,6 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
 
     def detail_view(self, request, pk):
         document = get_object_or_404(Document, pk=pk)
-        data = serialize.serialize_document(document)
+        data = self.serialize_document(document)
 
         return self.json_response(data)
