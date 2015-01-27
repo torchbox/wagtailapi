@@ -1,15 +1,12 @@
 from __future__ import absolute_import
 
-from django.conf.urls import url
+from django.conf.urls import url, include
 
-from . import views
+from . import api
 
 
 urlpatterns = [
-    url(r'^v1/pages/$', views.page_listing, name='wagtailapi_v1_page_listing'),
-    url(r'^v1/pages/(\d+)/$', views.page_detail, name='wagtailapi_v1_page_detail'),
-    url(r'^v1/images/$', views.image_listing, name='wagtailapi_v1_image_listing'),
-    url(r'^v1/images/(\d+)/$', views.image_detail, name='wagtailapi_v1_image_detail'),
-    url(r'^v1/documents/$', views.document_listing, name='wagtailapi_v1_document_listing'),
-    url(r'^v1/documents/(\d+)/$', views.document_detail, name='wagtailapi_v1_document_detail'),
+    url(r'^v1/pages/', include(api.PagesAPIEndpoint().get_urlpatterns(), namespace='wagtailapi_v1_pages')),
+    url(r'^v1/images/', include(api.ImagesAPIEndpoint().get_urlpatterns(), namespace='wagtailapi_v1_images')),
+    url(r'^v1/documents/', include(api.DocumentsAPIEndpoint().get_urlpatterns(), namespace='wagtailapi_v1_documents')),
 ]

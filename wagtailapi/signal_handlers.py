@@ -12,17 +12,17 @@ from wagtail.contrib.wagtailfrontendcache.utils import purge_url_from_cache
 
 def purge_page_from_cache(instance, **kwargs):
     for host in settings.ALLOWED_HOSTS:
-        purge_url_from_cache('http://' + host + reverse('wagtailapi_v1_page_detail', args=(instance.id, )))
+        purge_url_from_cache('http://' + host + reverse('wagtailapi_v1_pages:detail', args=(instance.id, )))
 
 
 def purge_image_from_cache(instance, **kwargs):
     for host in settings.ALLOWED_HOSTS:
-        purge_url_from_cache('http://' + host + reverse('wagtailapi_v1_image_detail', args=(instance.id, )))
+        purge_url_from_cache('http://' + host + reverse('wagtailapi_v1_images:detail', args=(instance.id, )))
 
 
 def purge_document_from_cache(instance, **kwargs):
     for host in settings.ALLOWED_HOSTS:
-        purge_url_from_cache('http://' + host + reverse('wagtailapi_v1_document_detail', args=(instance.id, )))
+        purge_url_from_cache('http://' + host + reverse('wagtailapi_v1_documents:detail', args=(instance.id, )))
 
 
 def register_signal_handlers():

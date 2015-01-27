@@ -18,7 +18,7 @@ class TestPageListing(TestCase):
     fixtures = ['wagtailapi_tests.json']
 
     def get_response(self, **params):
-        return self.client.get(reverse('wagtailapi_v1_page_listing'), params)
+        return self.client.get(reverse('wagtailapi_v1_pages:listing'), params)
 
     def get_page_id_list(self, content):
         return [page['id'] for page in content['pages']]

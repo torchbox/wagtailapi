@@ -13,7 +13,7 @@ class TestImageListing(TestCase):
     fixtures = ['wagtailapi_tests.json']
 
     def get_response(self, **params):
-        return self.client.get(reverse('wagtailapi_v1_image_listing'), params)
+        return self.client.get(reverse('wagtailapi_v1_images:listing'), params)
 
     def get_image_id_list(self, content):
         return [page['id'] for page in content['images']]

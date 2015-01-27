@@ -13,7 +13,7 @@ class TestDocumentListing(TestCase):
     fixtures = ['wagtailapi_tests.json']
 
     def get_response(self, **params):
-        return self.client.get(reverse('wagtailapi_v1_document_listing'), params)
+        return self.client.get(reverse('wagtailapi_v1_documents:listing'), params)
 
     def get_document_id_list(self, content):
         return [page['id'] for page in content['documents']]
