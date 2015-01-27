@@ -49,15 +49,6 @@ def get_api_data(obj, fields):
         except (models.fields.FieldDoesNotExist, AttributeError):
             pass
 
-        # Check attributes
-        if hasattr(obj, field_name):
-            value = getattr(obj, field_name)
-            if hasattr(value, '__call__'):
-                value = value()
-
-            yield field_name, force_text(value, strings_only=True)
-            continue
-
 
 class BaseAPIEndpoint(object):
     class BadRequestError(Exception):
