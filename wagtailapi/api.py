@@ -60,6 +60,57 @@ class BaseAPIEndpoint(object):
     def detail_view(self, request, pk):
         pass
 
+    def do_field_filtering(self, request, queryset):
+        # Get filterset class
+        filterset_class = filterset_factory(queryset.model)
+
+        # Run field filters
+        return filterset_class(request.GET, queryset=queryset).qs
+
+    def do_ordering(self, request, queryset):
+        if 'order' in request.GET:
+            order_by = request.GET['order']
+
+            if order_by in ('id', 'title'):
+                return queryset.order_by(order_by)
+            elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
+                # Make sure that the field is a django field
+                try:
+                    field = queryset.model._meta.get_field_by_name(order_by)[0]
+
+                    return queryset.order_by(order_by)
+                except LookupError:
+                    pass
+
+        return queryset
+
+    def do_search(self, request, queryset):
+        if 'search' in request.GET:
+            search_query = request.GET['search']
+
+            sb = get_search_backend()
+            queryset = sb.search(search_query, queryset)
+
+        return queryset
+
+    def do_pagination(self, request, queryset):
+        try:
+            offset = int(request.GET.get('offset', 0))
+            assert offset >= 0
+        except (ValueError, AssertionError):
+            raise self.BadRequestError("offset must be a positive integer")
+
+        try:
+            limit = int(request.GET.get('limit', 20))
+            assert limit >= 0
+        except (ValueError, AssertionError):
+            raise self.BadRequestError("limit must be a positive integer")
+
+        start = offset
+        stop = offset + limit
+
+        return queryset[start:stop]
+
     def json_response(self, data, response_cls=HttpResponse):
         return response_cls(
             json.dumps(data, indent=4, cls=DjangoJSONEncoder),
@@ -130,76 +181,48 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
 
         return OrderedDict(data)
 
-    def listing_view(self, request):
-        # Get model
-        if 'type' in request.GET:
-            model_name = request.GET['type']
+    def get_model(self, request):
+        if 'type' not in request.GET:
+            return Page
 
-            try:
-                model = resolve_model_string(model_name)
-            except LookupError:
-                raise Http404("Type doesn't exist")
-        else:
-            model = Page
+        model_name = request.GET['type']
+        try:
+            return resolve_model_string(model_name)
+        except LookupError:
+            raise Http404("Type doesn't exist")
 
-        # Get queryset
-        queryset = self.get_queryset(request, model=model)
-
-        # Find filterset class
-        if hasattr(queryset.model, 'api_filterset_class'):
-            filterset_class = queryset.model.filterset_class
-        else:
-            filterset_class = filterset_factory(queryset.model)
-
-        # Run field filters
-        queryset = filterset_class(request.GET, queryset=queryset).qs
-
-        # Child of filter
+    def do_child_of_filter(self, request, queryset):
         if 'child_of' in request.GET:
             parent_page_id = request.GET['child_of']
 
             try:
                 parent_page = Page.objects.get(id=parent_page_id)
-                queryset = queryset.child_of(parent_page)
+                return queryset.child_of(parent_page)
             except Page.DoesNotExist:
                 raise Http404("Parent page doesn't exist")
 
+        return queryset
+
+    def listing_view(self, request):
+        # Get model and queryset
+        model = self.get_model(request)
+        queryset = self.get_queryset(request, model=model)
+
+        # Filtering
+        queryset = self.do_field_filtering(request, queryset)
+        queryset = self.do_child_of_filter(request, queryset)
+
         # Ordering
-        if 'order' in request.GET:
-            order_by = request.GET['order']
-
-            if order_by in ('id', 'title'):
-                queryset = queryset.order_by(order_by)
-            elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
-                # Make sure that the field is a django field
-                try:
-                    field = obj._meta.get_field_by_name(field_name)[0]
-
-                    queryset = queryset.order_by(order_by)
-                except:
-                    pass
+        queryset = self.do_ordering(request, queryset)
 
         # Search
-        if 'search' in request.GET:
-            search_query = request.GET['search']
-            queryset = queryset.search(search_query)
+        queryset = self.do_search(request, queryset)
+
+        # Get total count before pagination
+        total_count = queryset.count()
 
         # Pagination
-        try:
-            offset = int(request.GET.get('offset', 0))
-            assert offset >= 0
-        except (ValueError, AssertionError):
-            raise self.BadRequestError("offset must be a positive integer")
-
-        try:
-            limit = int(request.GET.get('limit', 20))
-            assert limit >= 0
-        except (ValueError, AssertionError):
-            raise self.BadRequestError("limit must be a positive integer")
-
-        start = offset
-        stop = offset + limit
-        results = queryset[start:stop]
+        queryset = self.do_pagination(request, queryset)
 
         # Get list of fields to show in results
         if 'fields' in request.GET:
@@ -210,11 +233,11 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         return self.json_response(
             OrderedDict([
                 ('meta', OrderedDict([
-                    ('total_count', queryset.count()),
+                    ('total_count', total_count),
                 ])),
                 ('pages', [
-                    self.serialize_page(result, fields=fields)
-                    for result in results
+                    self.serialize_page(page, fields=fields)
+                    for page in queryset
                 ]),
             ])
         )
@@ -256,52 +279,20 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
     def listing_view(self, request):
         queryset = self.get_queryset(request)
 
-        # Find filterset class
-        if hasattr(queryset.model, 'api_filterset_class'):
-            filterset_class = queryset.model.filterset_class
-        else:
-            filterset_class = filterset_factory(queryset.model)
-
-        # Run field filters
-        queryset = filterset_class(request.GET, queryset=queryset).qs
+        # Filtering
+        queryset = self.do_field_filtering(request, queryset)
 
         # Ordering
-        if 'order' in request.GET:
-            order_by = request.GET['order']
-
-            if order_by in ('id', 'title'):
-                queryset = queryset.order_by(order_by)
-            elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
-                # Make sure that the field is a django field
-                try:
-                    field = obj._meta.get_field_by_name(field_name)[0]
-
-                    queryset = queryset.order_by(order_by)
-                except:
-                    pass
+        queryset = self.do_ordering(request, queryset)
 
         # Search
-        if 'search' in request.GET:
-            search_query = request.GET['search']
-            s = get_search_backend()
-            queryset = s.search(search_query, queryset)
+        queryset = self.do_search(request, queryset)
+
+        # Get total count before pagination
+        total_count = queryset.count()
 
         # Pagination
-        try:
-            offset = int(request.GET.get('offset', 0))
-            assert offset >= 0
-        except (ValueError, AssertionError):
-            raise self.BadRequestError("offset must be a positive integer")
-
-        try:
-            limit = int(request.GET.get('limit', 20))
-            assert limit >= 0
-        except (ValueError, AssertionError):
-            raise self.BadRequestError("limit must be a positive integer")
-
-        start = offset
-        stop = offset + limit
-        results = queryset[start:stop]
+        queryset = self.do_pagination(request, queryset)
 
         # Get list of fields to show in results
         if 'fields' in request.GET:
@@ -312,11 +303,11 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
         return self.json_response(
             OrderedDict([
                 ('meta', OrderedDict([
-                    ('total_count', queryset.count()),
+                    ('total_count', total_count),
                 ])),
                 ('images', [
-                    self.serialize_image(result, fields=fields)
-                    for result in results
+                    self.serialize_image(image, fields=fields)
+                    for image in queryset
                 ]),
             ])
         )
@@ -339,48 +330,29 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
     def listing_view(self, request):
         queryset = Document.objects.all()
 
-        # Run field filters
-        filterset_class = filterset_factory(queryset.model)
-        queryset = filterset_class(request.GET, queryset=queryset).qs
+        # Filtering
+        queryset = self.do_field_filtering(request, queryset)
 
         # Ordering
-        if 'order' in request.GET:
-            order_by = request.GET['order']
-
-            if order_by in ('id', 'title'):
-                queryset = queryset.order_by(order_by)
+        queryset = self.do_ordering(request, queryset)
 
         # Search
-        if 'search' in request.GET:
-            search_query = request.GET['search']
-            s = get_search_backend()
-            queryset = s.search(search_query, queryset)
+        queryset = self.do_search(request, queryset)
+
+        # Get total count before pagination
+        total_count = queryset.count()
 
         # Pagination
-        try:
-            offset = int(request.GET.get('offset', 0))
-            assert offset >= 0
-        except (ValueError, AssertionError):
-            raise self.BadRequestError("offset must be a positive integer")
-
-        try:
-            limit = int(request.GET.get('limit', 20))
-            assert limit >= 0
-        except (ValueError, AssertionError):
-            raise self.BadRequestError("limit must be a positive integer")
-
-        start = offset
-        stop = offset + limit
-        results = queryset[start:stop]
+        queryset = self.do_pagination(request, queryset)
 
         return self.json_response(
             OrderedDict([
                 ('meta', OrderedDict([
-                    ('total_count', queryset.count()),
+                    ('total_count', total_count),
                 ])),
                 ('documents', [
-                    self.serialize_document(result)
-                    for result in results
+                    self.serialize_document(document)
+                    for document in queryset
                 ]),
             ])
         )
