@@ -200,3 +200,46 @@ class TestImageListing(TestCase):
         image_id_list = self.get_image_id_list(content)
 
         self.assertEqual(set(image_id_list), set([5]))
+
+
+class TestImageDetail(TestCase):
+    fixtures = ['wagtailapi_tests.json']
+
+    def get_response(self, image_id, **params):
+        return self.client.get(reverse('wagtailapi_v1_images:detail', args=(image_id, )), params)
+
+    def test_status_code(self):
+        response = self.get_response(5)
+        self.assertEqual(response.status_code, 200)
+
+    def test_content_type_header(self):
+        response = self.get_response(5)
+        self.assertEqual(response['Content-type'], 'application/json')
+
+    def test_valid_json(self):
+        response = self.get_response(5)
+
+        # Will crash if there's a problem
+        json.loads(response.content.decode('UTF-8'))
+
+    def test_id(self):
+        response = self.get_response(5)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('id', content)
+        self.assertEqual(content['id'], 5)
+
+    def test_title(self):
+        response = self.get_response(5)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('title', content)
+        self.assertEqual(content['title'], "James Joyce")
+
+    def test_width_and_height(self):
+        response = self.get_response(5)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('width', content)
+        self.assertEqual(content['width'], 500)
+        self.assertEqual(content['height'], 392)

@@ -329,9 +329,73 @@ class TestPageListing(TestCase):
         self.assertEqual(set(page_id_list), set([5, 16, 18, 19]))
 
     def test_search_with_type(self):
-        response = self.get_response(type='tests.BlogEntrypage', search='blog')
+        response = self.get_response(type='tests.BlogEntryPage', search='blog')
         content = json.loads(response.content.decode('UTF-8'))
 
         page_id_list = self.get_page_id_list(content)
 
         self.assertEqual(set(page_id_list), set([16, 18, 19]))
+
+
+class TestPageDetail(TestCase):
+    fixtures = ['wagtailapi_tests.json']
+
+    def get_response(self, page_id, **params):
+        return self.client.get(reverse('wagtailapi_v1_pages:detail', args=(page_id, )), params)
+
+    def test_status_code(self):
+        response = self.get_response(16)
+        self.assertEqual(response.status_code, 200)
+
+    def test_content_type_header(self):
+        response = self.get_response(16)
+        self.assertEqual(response['Content-type'], 'application/json')
+
+    def test_valid_json(self):
+        response = self.get_response(16)
+
+        # Will crash if there's a problem
+        json.loads(response.content.decode('UTF-8'))
+
+    def test_meta(self):
+        response = self.get_response(16)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('meta', content)
+        self.assertIsInstance(content['meta'], dict)
+
+    def test_meta_type(self):
+        response = self.get_response(16)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('type', content['meta'])
+        self.assertEquals(content['meta']['type'], 'tests.BlogEntryPage')
+
+    def test_meta_parent_id(self):
+        response = self.get_response(16)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('parent_id', content['meta'])
+        self.assertEquals(content['meta']['parent_id'], 5)
+
+    def test_custom_fields(self):
+        response = self.get_response(16)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('date', content)
+        self.assertEquals(content['date'], '2013-12-02')
+
+        self.assertIn('body', content)
+
+    @unittest.expectedFailure
+    def test_child_relations(self):
+        response = self.get_response(16)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('related_links', content)
+        self.assertEquals(content['related_links'], [])
+
+        self.assertIn('carousel_items', content)
+
+        for carousel_item in content['carousel_items']:
+            self.assertEquals(carousel_item.keys(), {'id', 'embed_url', 'link', 'caption', 'image'})

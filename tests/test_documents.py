@@ -2,6 +2,7 @@ import json
 import unittest
 
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.core.urlresolvers import reverse
 
 from wagtail.wagtaildocs.models import Document
@@ -169,3 +170,47 @@ class TestDocumentListing(TestCase):
         document_id_list = self.get_document_id_list(content)
 
         self.assertEqual(set(document_id_list), set([2]))
+
+
+class TestDocumentDetail(TestCase):
+    fixtures = ['wagtailapi_tests.json']
+
+    def get_response(self, image_id, **params):
+        return self.client.get(reverse('wagtailapi_v1_documents:detail', args=(image_id, )), params)
+
+    def test_status_code(self):
+        response = self.get_response(1)
+        self.assertEqual(response.status_code, 200)
+
+    def test_content_type_header(self):
+        response = self.get_response(1)
+        self.assertEqual(response['Content-type'], 'application/json')
+
+    def test_valid_json(self):
+        response = self.get_response(1)
+
+        # Will crash if there's a problem
+        json.loads(response.content.decode('UTF-8'))
+
+    def test_id(self):
+        response = self.get_response(1)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('id', content)
+        self.assertEqual(content['id'], 1)
+
+    def test_title(self):
+        response = self.get_response(1)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('title', content)
+        self.assertEqual(content['title'], "Wagtail by Mark Harkin")
+
+    @unittest.expectedFailure
+    @override_settings(WAGTAILAPI_BASE_URL='http://api.example.com/')
+    def test_download_url(self):
+        response = self.get_response(1)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('download_url', content)
+        self.assertEqual(content['title'], 'http://api.example.com/documents/1/wagtail_by_markyharky.jpg')
