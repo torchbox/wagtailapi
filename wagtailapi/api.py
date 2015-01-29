@@ -46,7 +46,7 @@ def get_api_data(obj, fields):
             field = obj._meta.get_field_by_name(field_name)[0]
             yield field_name, field._get_val_from_obj(obj)
             continue
-        except (models.fields.FieldDoesNotExist, AttributeError):
+        except models.fields.FieldDoesNotExist:
             pass
 
         # Check attributes
