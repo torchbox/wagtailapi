@@ -256,12 +256,12 @@ class TestPageListing(TestCase):
         page_id_list = self.get_page_id_list(content)
         self.assertEqual(page_id_list, [16, 18, 19])
 
-    @unittest.expectedFailure
     def test_ordering_by_unknown_field_gives_error(self):
         response = self.get_response(order='not_a_field')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "cannot order by 'not_a_field' (unknown field)"})
 
 
     # LIMIT

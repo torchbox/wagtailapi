@@ -130,12 +130,12 @@ class TestImageListing(TestCase):
         image_id_list = self.get_image_id_list(content)
         self.assertEqual(image_id_list, [9, 14, 8, 4, 7, 11, 12, 10, 5, 13, 15, 6])
 
-    @unittest.expectedFailure
     def test_ordering_by_unknown_field_gives_error(self):
         response = self.get_response(order='not_a_field')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "cannot order by 'not_a_field' (unknown field)"})
 
 
     # LIMIT

@@ -97,8 +97,7 @@ class BaseAPIEndpoint(object):
                     pass
             else:
                 # Unknown ordering
-                # TODO: Raise an error
-                return queryset
+                raise self.BadRequestError("cannot order by '%s' (unknown field)" % order_by)
 
             # Reverse order
             if reverse_order:
