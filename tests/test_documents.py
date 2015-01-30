@@ -1,11 +1,15 @@
 import json
 import unittest
+import mock
 
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from wagtail.wagtaildocs.models import Document
+
+from wagtailapi import signal_handlers
 
 from . import models
 
@@ -283,3 +287,38 @@ class TestDocumentDetail(TestCase):
 
         self.assertIn('download_url', content['meta'])
         self.assertEqual(content['meta']['download_url'], 'http://api.example.com/documents/1/wagtail_by_markyharky.jpg')
+
+
+@override_settings(
+    INSTALLED_APPS=settings.INSTALLED_APPS + (
+        'wagtail.contrib.wagtailfrontendcache',
+    ),
+    WAGTAILFRONTENDCACHE={
+        'varnish': {
+            'BACKEND': 'wagtail.contrib.wagtailfrontendcache.backends.HTTPBackend',
+            'LOCATION': 'http://localhost:8000',
+        },
+    },
+    WAGTAILAPI_BASE_URL='http://api.example.com',
+)
+@mock.patch('wagtail.contrib.wagtailfrontendcache.backends.HTTPBackend.purge')
+class TestDocumentCacheInvalidation(TestCase):
+    fixtures = ['wagtailapi_tests.json']
+
+    @classmethod
+    def setUpClass(cls):
+        signal_handlers.register_signal_handlers()
+
+    @classmethod
+    def tearDownClass(cls):
+        signal_handlers.unregister_signal_handlers()
+
+    def test_resave_document_purges(self, purge):
+        Document.objects.get(id=5).save()
+
+        purge.assert_any_call('http://api.example.com/api/v1/documents/5/')
+
+    def test_delete_document_purges(self, purge):
+        Document.objects.get(id=5).delete()
+
+        purge.assert_any_call('http://api.example.com/api/v1/documents/5/')

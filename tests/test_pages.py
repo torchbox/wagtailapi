@@ -1,11 +1,15 @@
 import json
 import unittest
+import mock
 
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from wagtail.wagtailcore.models import Page
+
+from wagtailapi import signal_handlers
 
 from . import models
 
@@ -455,3 +459,48 @@ class TestPageDetail(TestCase):
 
         for carousel_item in content['carousel_items']:
             self.assertEquals(carousel_item.keys(), {'embed_url', 'link', 'caption', 'image'})
+
+
+@override_settings(
+    INSTALLED_APPS=settings.INSTALLED_APPS + (
+        'wagtail.contrib.wagtailfrontendcache',
+    ),
+    WAGTAILFRONTENDCACHE={
+        'varnish': {
+            'BACKEND': 'wagtail.contrib.wagtailfrontendcache.backends.HTTPBackend',
+            'LOCATION': 'http://localhost:8000',
+        },
+    },
+    WAGTAILAPI_BASE_URL='http://api.example.com',
+)
+@mock.patch('wagtail.contrib.wagtailfrontendcache.backends.HTTPBackend.purge')
+class TestPageCacheInvalidation(TestCase):
+    fixtures = ['wagtailapi_tests.json']
+
+    @classmethod
+    def setUpClass(cls):
+        signal_handlers.register_signal_handlers()
+
+    @classmethod
+    def tearDownClass(cls):
+        signal_handlers.unregister_signal_handlers()
+
+    def test_republish_page_purges(self, purge):
+        Page.objects.get(id=2).save_revision().publish()
+
+        purge.assert_any_call('http://api.example.com/api/v1/pages/2/')
+
+    def test_unpublish_page_purges(self, purge):
+        Page.objects.get(id=2).unpublish()
+
+        purge.assert_any_call('http://api.example.com/api/v1/pages/2/')
+
+    def test_delete_page_purges(self, purge):
+        Page.objects.get(id=16).delete()
+
+        purge.assert_any_call('http://api.example.com/api/v1/pages/16/')
+
+    def test_save_draft_doesnt_purge(self, purge):
+        Page.objects.get(id=2).save_revision()
+
+        purge.assert_not_called()

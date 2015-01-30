@@ -1,11 +1,15 @@
 import json
 import unittest
+import mock
 
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from wagtail.wagtailimages.models import get_image_model
+
+from wagtailapi import signal_handlers
 
 from . import models
 
@@ -306,3 +310,38 @@ class TestImageDetail(TestCase):
         self.assertIn('width', content)
         self.assertEqual(content['width'], 500)
         self.assertEqual(content['height'], 392)
+
+
+@override_settings(
+    INSTALLED_APPS=settings.INSTALLED_APPS + (
+        'wagtail.contrib.wagtailfrontendcache',
+    ),
+    WAGTAILFRONTENDCACHE={
+        'varnish': {
+            'BACKEND': 'wagtail.contrib.wagtailfrontendcache.backends.HTTPBackend',
+            'LOCATION': 'http://localhost:8000',
+        },
+    },
+    WAGTAILAPI_BASE_URL='http://api.example.com',
+)
+@mock.patch('wagtail.contrib.wagtailfrontendcache.backends.HTTPBackend.purge')
+class TestImageCacheInvalidation(TestCase):
+    fixtures = ['wagtailapi_tests.json']
+
+    @classmethod
+    def setUpClass(cls):
+        signal_handlers.register_signal_handlers()
+
+    @classmethod
+    def tearDownClass(cls):
+        signal_handlers.unregister_signal_handlers()
+
+    def test_resave_image_purges(self, purge):
+        get_image_model().objects.get(id=5).save()
+
+        purge.assert_any_call('http://api.example.com/api/v1/images/5/')
+
+    def test_delete_image_purges(self, purge):
+        get_image_model().objects.get(id=5).delete()
+
+        purge.assert_any_call('http://api.example.com/api/v1/images/5/')
