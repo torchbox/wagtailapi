@@ -241,7 +241,7 @@ For example (imagine we are in the same project as all previous examples, and pa
 Like filtering, it is also possible to order on database fields. The endpoint accepts a query parameter called ``order`` which should be set to the field name to order by. Field names can be prefixed with a ``-`` to reverse the ordering. It is also possible to order randomly by setting this parameter to ``random``.
 
 ```json
-    GET /api/v1/pages/?type=demo.BlogPage&order=-date_posted
+    GET /api/v1/pages/?type=demo.BlogPage&fields=title,date_posted,feed_image&order=-date_posted
 
     HTTP 200 OK
     Content-Type: application/json
@@ -364,18 +364,6 @@ The results are ordered by relevance. It is not possible to use the ``order`` pa
 Also, if your Wagtail site is using Elasticsearch, you do not need to select a type to access specific fields. This will search anything that's defined in the models' ``search_fields``.
 
 
-##### Reference
-
-Parameters:
- * ``type``
- * ``limit``
- * ``offset``
- * ``fields``
- * ``child_of``
- * ``order``
- * ``search``
-
-
 #### The detail view (``/api/v1/pages/{id}/``)
 
 This view gives you access to all of the details for a particular page.
@@ -409,21 +397,220 @@ The format is the same as what is returned inside the listing view, with two add
  - The ``meta`` section has a ``parent_id`` field that contains the ID of the parent page
 
 
-The ``images`` endpoint
------------------------
+### The ``images`` endpoint
 
 This endpoint gives access to all uploaded images. This will use the custom image model if one was specified. Otherwise, it falls back to ``wagtailimages.Image``.
 
 
 #### The listing view (``/api/v1/images/``)
 
+This is what a typical response from a ``GET`` request to this listing would look like:
+
+```json
+    GET /api/v1/images/
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "meta": {
+            "total_count": 3
+        }, 
+        "images": [
+            {
+                "id": 4, 
+                "title": "Wagtail by Mark Harkin"
+            }, 
+            {
+                "id": 5, 
+                "title": "James Joyce"
+            }, 
+            {
+                "id": 6, 
+                "title": "David Mitchell"
+            }
+        ]
+    }
+```
+
+Each image object contains the ``id`` and ``title`` of the image.
+
+
+##### Getting ``width``, ``height`` and other fields
+
+Like the pages endpoint, the images endpoint supports the ``fields`` query parameter.
+
+By default, this will allow you to add the ``width`` and ``height`` fields to your results. If your Wagtail site uses a custom image model, it is possible to have more.
+
+```json
+    GET /api/v1/images/?fields=title,width,height
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "meta": {
+            "total_count": 3
+        }, 
+        "images": [
+            {
+                "id": 4, 
+                "title": "Wagtail by Mark Harkin", 
+                "width": 640, 
+                "height": 427
+            }, 
+            {
+                "id": 5, 
+                "title": "James Joyce", 
+                "width": 500, 
+                "height": 392
+            }, 
+            {
+                "id": 6, 
+                "title": "David Mitchell", 
+                "width": 360, 
+                "height": 282
+            }
+        ]
+    }
+```
+
+
+##### Filtering on fields
+
+Exact matches on field values can be done by using a query parameter with the same name as the field. Any images with the field that exactly matches the value of this parameter will be returned.
+
+```json
+    GET /api/v1/pages/?title=James Joyce
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "meta": {
+            "total_count": 3
+        }, 
+        "images": [
+            {
+                "id": 5, 
+                "title": "James Joyce"
+            }
+        ]
+    }
+```
+
+##### Ordering
+
+The images endpoint also accepts the ``order`` parameter which should be set to a field name to order by. Field names can be prefixed with a ``-`` to reverse the ordering. It is also possible to order randomly by setting this parameter to ``random``.
+
+```json
+    GET /api/v1/images/?fields=title,width&order=width
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "meta": {
+            "total_count": 3
+        }, 
+        "images": [
+            {
+                "id": 6, 
+                "title": "David Mitchell", 
+                "width": 360
+            },
+            {
+                "id": 5, 
+                "title": "James Joyce", 
+                "width": 500
+            },
+            {
+                "id": 4, 
+                "title": "Wagtail by Mark Harkin", 
+                "width": 640
+            }
+        ]
+    }
+```
+
+
+##### Pagination
+
+Pagination is done using two query parameters called ``limit`` and ``offset``. ``limit`` sets the number of results to return and ``offset`` is the index of the first result to return. The default value for ``limit`` is ``20`` and its maximum value is ``100`` (which can be changed using the ``WAGTAILAPI_MAX_RESULTS`` setting).
+
+```json
+    GET /api/v1/images/?limit=1&offset=1
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "meta": {
+            "total_count": 3
+        },
+        "images": [
+            {
+                "id": 5, 
+                "title": "James Joyce", 
+                "width": 500, 
+                "height": 392
+            }
+        ]
+    }
+```
+
+Pagination will not change the ``total_count`` value in the meta.
+
+
+##### Searching
+
+To perform a full-text search, set the ``search`` parameter to the query string you would like to search on.
+
+```json
+    GET /api/v1/images/?search=James
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "meta": {
+            "total_count": 1
+        },
+        "pages": [
+            {
+                "id": 5, 
+                "title": "James Joyce", 
+                "width": 500, 
+                "height": 392
+            }
+        ]
+    }
+```
+
+Like the pages endpoint, the results are ordered by relevance and it is not possible to use the ``order`` parameter with a search query.
+
+
 
 #### The detail view (``/api/v1/images/{id}/``)
 
+This view gives you access to all of the details for a particular image.
+
+```json
+    GET /api/v1/images/5/
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "id": 5, 
+        "title": "James Joyce", 
+        "width": 500, 
+        "height": 392
+    }
+```
 
 
-The ``documents`` endpoint
---------------------------
+### The ``documents`` endpoint
 
 This endpoint gives access to all uploaded documents.
 
@@ -433,3 +620,19 @@ This endpoint gives access to all uploaded documents.
 
 #### The detail view (``/api/v1/documents/{id}/``)
 
+This view gives you access to all of the details for a particular document.
+
+```json
+    GET /api/v1/documents/1/
+
+    HTTP 200 OK
+    Content-Type: application/json
+
+    {
+        "id": 1, 
+        "meta": {
+            "download_url": "http://api.example.com/documents/1/usage.md"
+        }, 
+        "title": "Wagtail API usage"
+    }
+```
