@@ -617,6 +617,8 @@ This endpoint gives access to all uploaded documents.
 
 #### The listing view (``/api/v1/documents/``)
 
+The documents listing supports the same features as the images lising (documented above) but works with Documents instead.
+
 
 #### The detail view (``/api/v1/documents/{id}/``)
 
