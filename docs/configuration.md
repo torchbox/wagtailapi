@@ -8,7 +8,7 @@
 
 This is used in two places, when generating absolute URLs to document files and invalidating the cache.
 
-Generating URLs to documents will fall back the the current request's hostname if this is not set. Cache invalidation cannot do this however so this setting must be set when using this module alongside the ``wagtailfrontendcache`` module.
+Generating URLs to documents will fall back the the current request's hostname if this is not set. Cache invalidation cannot do this, however, so this setting must be set when using this module alongside the ``wagtailfrontendcache`` module.
 
 
 ``WAGTAILAPI_SEARCH_ENABLED`` (default: True)
@@ -23,7 +23,7 @@ This allows you to change the maximum number of results a user can get at any ti
 
 ### Adding more fields to the pages endpoint
 
-By Default, the pages endpoint only includes the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
+By default, the pages endpoint only includes the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
 
 You can add more fields to the pages endpoint by setting an attribute called ``api_fields`` to a list/tuple of field names:
 
@@ -37,7 +37,7 @@ You can add more fields to the pages endpoint by setting an attribute called ``a
 ```
 
 
-This list also supports child relations (which will be nested inside returned JSON document):
+This list also supports child relations (which will be nested inside the returned JSON document):
 
 ```python
     class BlogPageRelatedLink(Orderable):
@@ -57,9 +57,9 @@ This list also supports child relations (which will be nested inside returned JS
 
 ### Frontend cache invalidation
 
-If you have a Varnish, Squid or Cloudflare instance in front of your API. The ``wagtailapi`` module can automatically invalidate cached responses for you whenever they are updated in the database.
+If you have a Varnish, Squid or Cloudflare instance in front of your API, the ``wagtailapi`` module can automatically invalidate cached responses for you whenever they are updated in the database.
 
-To enable it, firstly configure the ``wagtail.contrib.wagtailfrontendcache`` module within your project (see [Wagtailfrontentcache docs](http://docs.wagtail.io/en/latest/contrib_components/frontendcache.html) for more information).
+To enable it, firstly configure the ``wagtail.contrib.wagtailfrontendcache`` module within your project (see [Wagtail frontend cache docs](http://docs.wagtail.io/en/latest/contrib_components/frontendcache.html) for more information).
 
 Then make sure that the ``WAGTAILAPI_BASE_URL`` setting is set correctly (eg. ``WAGTAILAPI_BASE_URL = 'http://api.mysite.com'``).
 
