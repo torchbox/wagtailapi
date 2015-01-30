@@ -63,6 +63,14 @@ class BaseAPIEndpoint(object):
     class BadRequestError(Exception):
         pass
 
+    known_query_parameters = (
+        'limit',
+        'offset',
+        'fields',
+        'order',
+        'search',
+    )
+
     def listing_view(self, request):
         return NotImplemented
 
@@ -115,6 +123,15 @@ class BaseAPIEndpoint(object):
         data.extend(get_api_data(obj, fields))
 
         return OrderedDict(data)
+
+    def check_query_paramters(self, request, queryset):
+        query_parameters = set(request.GET.keys())
+
+        # All query paramters must be either a field or an operation
+        allowed_query_parameters = set(list(self.known_query_parameters) + self.get_api_fields(queryset.model))
+        bad_parameters = query_parameters - allowed_query_parameters
+        if bad_parameters:
+            raise self.BadRequestError("query parameter is not an operation or a recognised field: %s" % ', '.join(bad_parameters))
 
     def do_field_filtering(self, request, queryset):
         """
@@ -259,6 +276,11 @@ class BaseAPIEndpoint(object):
 
 
 class PagesAPIEndpoint(BaseAPIEndpoint):
+    known_query_parameters = BaseAPIEndpoint.known_query_parameters + (
+        'type',
+        'child_of',
+    )
+
     def get_queryset(self, request, model=Page):
         # Get live pages that are not in a private section
         queryset = model.objects.public().live()
@@ -312,6 +334,9 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         model = self.get_model(request)
         queryset = self.get_queryset(request, model=model)
 
+        # Check query paramters
+        self.check_query_paramters(request, queryset)
+
         # Filtering
         queryset = self.do_field_filtering(request, queryset)
         queryset = self.do_child_of_filter(request, queryset)
@@ -364,6 +389,9 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
 
     def listing_view(self, request):
         queryset = self.get_queryset(request)
+
+        # Check query paramters
+        self.check_query_paramters(request, queryset)
 
         # Filtering
         queryset = self.do_field_filtering(request, queryset)
@@ -420,6 +448,9 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
 
     def listing_view(self, request):
         queryset = Document.objects.all()
+
+        # Check query paramters
+        self.check_query_paramters(request, queryset)
 
         # Filtering
         queryset = self.do_field_filtering(request, queryset)

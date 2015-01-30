@@ -182,15 +182,15 @@ class TestPageListing(TestCase):
         response = self.get_response(date='2013-12-02')
         content = json.loads(response.content.decode('UTF-8'))
 
-        # Everything should be returned
-        self.assertEqual(content['meta']['total_count'], get_total_page_count())
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "query parameter is not an operation or a recognised field: date"})
 
-    @unittest.expectedFailure
     def test_filtering_unknown_field_gives_error(self):
         response = self.get_response(not_a_field='abc')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "query parameter is not an operation or a recognised field: not_a_field"})
 
 
     # CHILD OF FILTER

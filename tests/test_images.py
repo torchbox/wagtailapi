@@ -104,12 +104,12 @@ class TestImageListing(TestCase):
         image_id_list = self.get_image_id_list(content)
         self.assertEqual(image_id_list, [5])
 
-    @unittest.expectedFailure
     def test_filtering_unknown_field_gives_error(self):
         response = self.get_response(not_a_field='abc')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "query parameter is not an operation or a recognised field: not_a_field"})
 
 
     # ORDERING
