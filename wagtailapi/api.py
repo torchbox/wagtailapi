@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls import url
+from django.conf import settings
 
 from wagtail.wagtailcore.models import Page
 from wagtail.wagtailimages.models import get_image_model
@@ -184,6 +185,8 @@ class BaseAPIEndpoint(object):
         This performs limit/offset based pagination on the result set
         Eg: ?limit=10&offset=20 -- Returns 10 items starting at item 20
         """
+        limit_max = getattr(settings, 'WAGTAILAPI_LIMIT_MAX', 20)
+
         try:
             offset = int(request.GET.get('offset', 0))
             assert offset >= 0
@@ -191,7 +194,11 @@ class BaseAPIEndpoint(object):
             raise self.BadRequestError("offset must be a positive integer")
 
         try:
-            limit = int(request.GET.get('limit', 20))
+            limit = int(request.GET.get('limit', min(20, limit_max)))
+
+            if limit > limit_max:
+                raise self.BadRequestError("limit cannot be higher than %d" % limit_max)
+
             assert limit >= 0
         except (ValueError, AssertionError):
             raise self.BadRequestError("limit must be a positive integer")

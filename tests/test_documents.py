@@ -155,6 +155,30 @@ class TestDocumentListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "limit must be a positive integer"})
 
+    def test_limit_too_high_gives_error(self):
+        response = self.get_response(limit=1000)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "limit cannot be higher than 20"})
+
+    @override_settings(WAGTAILAPI_LIMIT_MAX=10)
+    def test_limit_maximum_can_be_changed(self):
+        response = self.get_response(limit=20)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "limit cannot be higher than 10"})
+
+    @override_settings(WAGTAILAPI_LIMIT_MAX=2)
+    def test_limit_default_changes_with_max(self):
+        # The default limit is 20. If WAGTAILAPI_LIMIT_MAX is less than that,
+        # the default should change accordingly.
+        response = self.get_response()
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(len(content['documents']), 2)
+
 
     # OFFSET
 
