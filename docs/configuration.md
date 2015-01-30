@@ -1,5 +1,6 @@
-Configuration
--------------
+# Wagtail API Documentation
+
+## Configuration
 
 ### Settings
 

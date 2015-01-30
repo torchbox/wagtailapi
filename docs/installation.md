@@ -1,5 +1,6 @@
-Installation
-------------
+# Wagtail API Documentation
+
+## Installation
 
 The ``wagtailapi`` module can be installed with ``pip``:
 
