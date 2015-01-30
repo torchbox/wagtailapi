@@ -387,7 +387,6 @@ class TestPageDetail(TestCase):
 
         self.assertIn('body', content)
 
-    @unittest.expectedFailure
     def test_child_relations(self):
         response = self.get_response(16)
         content = json.loads(response.content.decode('UTF-8'))
@@ -398,4 +397,4 @@ class TestPageDetail(TestCase):
         self.assertIn('carousel_items', content)
 
         for carousel_item in content['carousel_items']:
-            self.assertEquals(carousel_item.keys(), {'id', 'embed_url', 'link', 'caption', 'image'})
+            self.assertEquals(carousel_item.keys(), {'embed_url', 'link', 'caption', 'image'})
