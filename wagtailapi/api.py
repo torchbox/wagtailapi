@@ -124,7 +124,7 @@ class BaseAPIEndpoint(object):
 
         return OrderedDict(data)
 
-    def check_query_paramters(self, request, queryset):
+    def check_query_parameters(self, request, queryset):
         query_parameters = set(request.GET.keys())
 
         # All query paramters must be either a field or an operation
@@ -339,7 +339,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         queryset = self.get_queryset(request, model=model)
 
         # Check query paramters
-        self.check_query_paramters(request, queryset)
+        self.check_query_parameters(request, queryset)
 
         # Filtering
         queryset = self.do_field_filtering(request, queryset)
@@ -395,7 +395,7 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
         queryset = self.get_queryset(request)
 
         # Check query paramters
-        self.check_query_paramters(request, queryset)
+        self.check_query_parameters(request, queryset)
 
         # Filtering
         queryset = self.do_field_filtering(request, queryset)
@@ -454,7 +454,7 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
         queryset = Document.objects.all()
 
         # Check query paramters
-        self.check_query_paramters(request, queryset)
+        self.check_query_parameters(request, queryset)
 
         # Filtering
         queryset = self.do_field_filtering(request, queryset)
