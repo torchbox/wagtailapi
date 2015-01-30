@@ -255,11 +255,12 @@ class TestDocumentDetail(TestCase):
         self.assertIn('id', content)
         self.assertEqual(content['id'], 1)
 
-    def test_no_meta(self):
-        response = self.get_response(5)
+    def test_meta(self):
+        response = self.get_response(1)
         content = json.loads(response.content.decode('UTF-8'))
 
-        self.assertNotIn('meta', content)
+        self.assertIn('meta', content)
+        self.assertIsInstance(content['meta'], dict)
 
     def test_title(self):
         response = self.get_response(1)
@@ -268,11 +269,17 @@ class TestDocumentDetail(TestCase):
         self.assertIn('title', content)
         self.assertEqual(content['title'], "Wagtail by Mark Harkin")
 
-    @unittest.expectedFailure
-    @override_settings(WAGTAILAPI_BASE_URL='http://api.example.com/')
     def test_download_url(self):
         response = self.get_response(1)
         content = json.loads(response.content.decode('UTF-8'))
 
-        self.assertIn('download_url', content)
-        self.assertEqual(content['title'], 'http://api.example.com/documents/1/wagtail_by_markyharky.jpg')
+        self.assertIn('download_url', content['meta'])
+        self.assertEqual(content['meta']['download_url'], 'http://localhost/documents/1/wagtail_by_markyharky.jpg')
+
+    @override_settings(WAGTAILAPI_BASE_URL='http://api.example.com/')
+    def test_download_url_with_custom_base_url(self):
+        response = self.get_response(1)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('download_url', content['meta'])
+        self.assertEqual(content['meta']['download_url'], 'http://api.example.com/documents/1/wagtail_by_markyharky.jpg')
