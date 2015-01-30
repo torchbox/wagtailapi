@@ -219,6 +219,14 @@ class TestDocumentListing(TestCase):
 
         self.assertEqual(set(document_id_list), set([2]))
 
+    @override_settings(WAGTAILAPI_SEARCH_ENABLED=False)
+    def test_search_when_disabled_gives_error(self):
+        response = self.get_response(search='james')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "search is disabled"})
+
 
 class TestDocumentDetail(TestCase):
     fixtures = ['wagtailapi_tests.json']

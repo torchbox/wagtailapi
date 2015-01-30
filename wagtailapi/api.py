@@ -172,7 +172,12 @@ class BaseAPIEndpoint(object):
         This performs a full-text search on the result set
         Eg: ?search=James Joyce
         """
+        search_enabled = getattr(settings, 'WAGTAILAPI_SEARCH_ENABLED', True)
+
         if 'search' in request.GET:
+            if not search_enabled:
+                raise self.BadRequestError("search is disabled")
+
             search_query = request.GET['search']
 
             sb = get_search_backend()
