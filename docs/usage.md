@@ -2,16 +2,10 @@
 
 ## Usage
 
-### Contents
-
-* [Pages (``/api/v1/pages/``)](The ``pages`` endpoint)
-* [Images (``/api/v1/images/``)](The ``images`` endpoint)
-* [Documents (``/api/v1/documents/``)](The ``pdocumentsages`` endpoint)
-
 
 ### Listing views
 
-Performing a ``GET`` request against one of these URLs will get you a listing of things. The response will look a little bit like this:
+Performing a ``GET`` request against one of the endpoints will get you a listing of objects in that endpoint. The response will look a little bit like this:
 
 ```json
     GET /api/v1/endpoint name/
@@ -49,9 +43,8 @@ This endpoint includes all live pages in your site that have not been put in a p
 
 #### The listing view (``/api/v1/pages/``)
 
-Here I'll go into the specific details about the ``pages`` listing.
 
-This is what a typical response from a ``GET`` request would look like:
+This is what a typical response from a ``GET`` request to this listing would look like:
 
 ```json
     GET /api/v1/pages/
@@ -82,7 +75,7 @@ This is what a typical response from a ``GET`` request would look like:
     }
 ```
 
-Each page object contains the id, a meta section and the fields with their values.
+Each page object contains the ``id``, a ``meta`` section and the fields with their values.
 
 
 ##### ``meta``
@@ -90,13 +83,11 @@ Each page object contains the id, a meta section and the fields with their value
 This section is for any piece of information that is useful, but not a database field. The initial implementation only includes the type name here, but possible additions would be things like urls to relevant parts of the api (eg. detail/edit views), status, parent page, etc.
 
 
-##### Dealing with different model classes
+##### Selecting a page type
 
-The main challenge I faced while creating this view is that different pages can use different types so will have a different set of fields to view/filter/sort on.
+Most Wagtail sites are made up of multiple different types of page that each have their own specific fields. In order to view/filter/order on fields specific to one page type, you must select that page type using the ``type`` query parameter.
 
-The way the pages endpoint works around this is as follows:
- - By default, the main listing view lists all pages. The only extra field returned is ``title`` and you can only filter/order on the ``id`` and the ``title`` fields.
- - You can access fields of a specific class by using the ``type`` query parameter. This filters the results to only show pages of the chosen type and also gives the user access to view/filter/order on all of the extra fields of that specific type.
+The ``type`` query parameter must be set to the Pages model name in the format: ``app_label.ModelName``.
 
 ```json
     GET /api/v1/pages/?type=demo.BlogPage
@@ -137,9 +128,9 @@ The way the pages endpoint works around this is as follows:
 
 ##### Specifying a list of fields to return
 
-As you can see, we still only get the ``title`` field by default. I didn't want to just throw in all fields onto the listing as I imagine most of them won't be used in listings (and are intended to only be used in detail pages).
+As you can see, we still only get the ``title`` field, even though we have selected a type. That's because listing pages require you to explicitly tell it what extra fields you would like to see. You can do this with the ``fields`` query parameter.
 
-As the client probably knows best about what fields they want, I added another query parameter to allow them to choose a list of fields called ``fields``.
+Just set ``fields`` to a command-separated list of field names that you would like to use.
 
 ```json
     GET /api/v1/pages/?type=demo.BlogPage&fields=title,date_posted,feed_image
@@ -218,7 +209,7 @@ Exact matches on field values can be done by using a query parameter with the sa
 
 ##### Filtering by section of the tree
 
-It is also possible to filter the listing to only include pages with a particular parent. This is useful if you have multiple blog listings with the same page type for example.
+It is also possible to filter the listing to only include pages with a particular parent. This is useful if you have multiple blogs on your site and only want to view the contents of one of them.
 
 For example (imagine we are in the same project as all previous examples, and page id ``7`` refers to the other blog index):
 
