@@ -64,10 +64,10 @@ class BaseAPIEndpoint(object):
         pass
 
     def listing_view(self, request):
-        pass
+        return NotImplemented
 
     def detail_view(self, request, pk):
-        pass
+        return NotImplemented
 
     def get_api_fields(self, model):
         """
@@ -414,10 +414,7 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
 
         # Download URL
         if show_details:
-            if base_url:
-                data['download_url'] = base_url + document.url
-            else:
-                data['download_url'] = document.url
+            data['download_url'] = (base_url or '') + document.url
 
         return data
 
