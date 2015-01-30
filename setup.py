@@ -23,10 +23,10 @@ from wagtailapi import __version__
 setup(
     name='wagtailapi',
     version=__version__,
-    description='',
+    description='A module for adding a read only, JSON based web API to your Wagtail site',
     author='Karl Hobley',
     author_email='karlhobley10@gmail.com',
-    url='',
+    url='https://github.com/torchbox/wagtailapi',
     packages=find_packages(),
     include_package_data=True,
     license='BSD',
