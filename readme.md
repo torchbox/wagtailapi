@@ -12,9 +12,6 @@ There are three endpoints to the API:
 See [the API documentation](http://docs.wagtailapi.apiary.io/) for more information on how to use the API.
 
 
-**Warning:** This module is experimental and likely to change in backwards incompatible ways. Once finished, it will be merged into Wagtail as a new contrib app.
-
-
 Installation
 ------------
 
@@ -54,17 +51,21 @@ Configuration
 
 ### Settings
 
-``WAGTAILAPI_BASE_URL`` (required)
+``WAGTAILAPI_BASE_URL`` (required when using frontend cache invalidation)
 
-*Not implemented*
+This is used in two places, when generating absolute URLs to document files and invalidating the cache.
+
+Generating URLs to documents will fall back the the current request's hostname if this is not set. Cache invalidation cannot do this however so this setting must be set when using this module alongside the ``wagtailfrontendcache`` module.
+
 
 ``WAGTAILAPI_SEARCH_ENABLED`` (default: True)
 
-*Not implemented*
+Setting this to false will disable full text search. This applies to all endpoints.
 
-``WAGTAILAPI_MAX_RESULTS`` (default: 100)
 
-*Not implemented*
+``WAGTAILAPI_MAX_RESULTS`` (default: 20)
+
+This allows you to change the maximum number of results a user can get at any time. This applies to all endpoints.
 
 
 ### Adding more fields to pages
