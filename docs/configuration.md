@@ -21,7 +21,7 @@ Setting this to false will disable full text search. This applies to all endpoin
 This allows you to change the maximum number of results a user can get at any time. This applies to all endpoints.
 
 
-### Adding more fields to pages
+### Adding more fields to the pages endpoint
 
 By Default, the pages endpoint only includes the ``id``, ``title`` and ``type`` fields in both the listing and detail views.
 
