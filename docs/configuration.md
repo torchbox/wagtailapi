@@ -53,3 +53,14 @@ This list also supports child relations (which will be nested inside returned JS
 
         api_fields = ('posted_by', 'posted_at', 'content', 'related_links')
 ```
+
+
+### Frontend cache invalidation
+
+If you have a Varnish, Squid or Cloudflare instance in front of your API. The ``wagtailapi`` module can automatically invalidate cached responses for you whenever they are updated in the database.
+
+To enable it, firstly configure the ``wagtail.contrib.wagtailfrontendcache`` module within your project (see [Wagtailfrontentcache docs](http://docs.wagtail.io/en/latest/contrib_components/frontendcache.html) for more information).
+
+Then make sure that the ``WAGTAILAPI_BASE_URL`` setting is set correctly (eg. ``WAGTAILAPI_BASE_URL = 'http://api.mysite.com'``).
+
+``wagtailapi`` should detect that the ``frontendcache`` module is enabled and hook into it to make it also invalidate API urls.
