@@ -228,6 +228,12 @@ class TestImageDetail(TestCase):
         self.assertIn('id', content)
         self.assertEqual(content['id'], 5)
 
+    def test_no_meta(self):
+        response = self.get_response(5)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertNotIn('meta', content)
+
     def test_title(self):
         response = self.get_response(5)
         content = json.loads(response.content.decode('UTF-8'))

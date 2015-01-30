@@ -198,6 +198,12 @@ class TestDocumentDetail(TestCase):
         self.assertIn('id', content)
         self.assertEqual(content['id'], 1)
 
+    def test_no_meta(self):
+        response = self.get_response(5)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertNotIn('meta', content)
+
     def test_title(self):
         response = self.get_response(1)
         content = json.loads(response.content.decode('UTF-8'))
