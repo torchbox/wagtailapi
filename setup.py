@@ -3,7 +3,7 @@
 import sys, os
 
 try:
-    from setuptools import setup, find_packages
+    from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
@@ -27,7 +27,7 @@ setup(
     author='Karl Hobley',
     author_email='karlhobley10@gmail.com',
     url='https://github.com/torchbox/wagtailapi',
-    packages=find_packages(),
+    packages=['wagtailapi'],
     include_package_data=True,
     license='BSD',
     classifiers=[
