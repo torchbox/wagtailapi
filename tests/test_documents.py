@@ -93,13 +93,12 @@ class TestDocumentListing(TestCase):
         document_id_list = self.get_document_id_list(content)
         self.assertEqual(document_id_list, [3, 12, 10, 2, 7, 9, 8, 4, 1, 5, 11, 6])
 
-    @unittest.expectedFailure
     def test_ordering_by_title_backwards(self):
         response = self.get_response(order='-title')
         content = json.loads(response.content.decode('UTF-8'))
 
         document_id_list = self.get_document_id_list(content)
-        self.assertEqual(document_id_list, [6, 11, 5, 1, 4, 8, 9, 9, 2, 10, 12, 3])
+        self.assertEqual(document_id_list, [6, 11, 5, 1, 4, 8, 9, 7, 2, 10, 12, 3])
 
     @unittest.expectedFailure
     def test_ordering_by_unknown_field_gives_error(self):

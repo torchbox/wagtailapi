@@ -123,7 +123,6 @@ class TestImageListing(TestCase):
         image_id_list = self.get_image_id_list(content)
         self.assertEqual(image_id_list, [6, 15, 13, 5, 10, 12, 11, 7, 4, 8, 14, 9])
 
-    @unittest.expectedFailure
     def test_ordering_by_title_backwards(self):
         response = self.get_response(order='-title')
         content = json.loads(response.content.decode('UTF-8'))

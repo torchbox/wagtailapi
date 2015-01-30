@@ -228,7 +228,6 @@ class TestPageListing(TestCase):
         page_id_list = self.get_page_id_list(content)
         self.assertEqual(page_id_list, [21, 22, 19, 23, 5, 16, 18, 12, 14, 8, 9, 4, 2, 13, 20, 17, 6, 10, 15])
 
-    @unittest.expectedFailure
     def test_ordering_by_title_backwards(self):
         response = self.get_response(order='-title')
         content = json.loads(response.content.decode('UTF-8'))

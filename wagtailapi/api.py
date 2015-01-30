@@ -77,16 +77,32 @@ class BaseAPIEndpoint(object):
         if 'order' in request.GET:
             order_by = request.GET['order']
 
+            # Check if reverse ordering is set
+            if order_by.startswith('-'):
+                reverse_order = True
+                order_by = order_by[1:]
+            else:
+                reverse_order = False
+
+            # Add ordering
             if order_by in ('id', 'title'):
-                return queryset.order_by(order_by)
+                queryset = queryset.order_by(order_by)
             elif hasattr(queryset.model, 'api_fields') and order_by in queryset.model.api_fields:
                 # Make sure that the field is a django field
                 try:
                     field = queryset.model._meta.get_field_by_name(order_by)[0]
 
-                    return queryset.order_by(order_by)
+                    queryset = queryset.order_by(order_by)
                 except LookupError:
                     pass
+            else:
+                # Unknown ordering
+                # TODO: Raise an error
+                return queryset
+
+            # Reverse order
+            if reverse_order:
+                queryset = queryset.reverse()
 
         return queryset
 
