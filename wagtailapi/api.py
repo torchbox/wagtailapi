@@ -67,6 +67,10 @@ class BaseAPIEndpoint(object):
         pass
 
     def get_api_fields(self, model):
+        """
+        This returns a list of field names that are allowed to
+        be used in the API (excluding the id field).
+        """
         api_fields = []
 
         if hasattr(model, 'api_fields'):
@@ -75,9 +79,17 @@ class BaseAPIEndpoint(object):
         return api_fields
 
     def serialize_object_metadata(self, obj, show_details=False):
+        """
+        This returns a JSON-serialisable dict to use for the "meta"
+        section of a particlular object.
+        """
         return OrderedDict()
 
     def serialize_object(self, obj, fields=(), all_fields=False, show_details=False):
+        """
+        This converts an object into JSON-serialisable dict so it can
+        be used in the API.
+        """
         data = [
             ('id', obj.id),
         ]
@@ -99,6 +111,10 @@ class BaseAPIEndpoint(object):
         return OrderedDict(data)
 
     def do_field_filtering(self, request, queryset):
+        """
+        This performs field level filtering on the result set
+        Eg: ?title=James Joyce
+        """
         # Get filterset class
         filterset_class = filterset_factory(queryset.model)
 
@@ -106,6 +122,13 @@ class BaseAPIEndpoint(object):
         return filterset_class(request.GET, queryset=queryset).qs
 
     def do_ordering(self, request, queryset):
+        """
+        This applies ordering to the result set
+        Eg: ?order=title
+
+        It also supports reverse ordering
+        Eg: ?order=-title
+        """
         if 'order' in request.GET:
             order_by = request.GET['order']
 
@@ -130,6 +153,10 @@ class BaseAPIEndpoint(object):
         return queryset
 
     def do_search(self, request, queryset):
+        """
+        This performs a full-text search on the result set
+        Eg: ?search=James Joyce
+        """
         if 'search' in request.GET:
             search_query = request.GET['search']
 
@@ -139,6 +166,10 @@ class BaseAPIEndpoint(object):
         return queryset
 
     def do_pagination(self, request, queryset):
+        """
+        This performs limit/offset based pagination on the result set
+        Eg: ?limit=10&offset=20 -- Returns 10 items starting at item 20
+        """
         try:
             offset = int(request.GET.get('offset', 0))
             assert offset >= 0
@@ -157,12 +188,22 @@ class BaseAPIEndpoint(object):
         return queryset[start:stop]
 
     def json_response(self, data, response_cls=HttpResponse):
+        """
+        This takes a JSON-serialisable thing and builds a HTTP response
+        from it
+        """
         return response_cls(
             json.dumps(data, indent=4, cls=DjangoJSONEncoder),
             content_type='application/json'
         )
 
     def api_view(self, view):
+        """
+        This is a decorator that is applied to all API views.
+
+        It's only job currently is to catch Http404 and BadRequestError
+        exceptions and convert them into nicer error messages for the user.
+        """
         @wraps(view)
         def wrapper(*args, **kwargs):
             # Catch exceptions and format them as JSON documents
@@ -180,6 +221,9 @@ class BaseAPIEndpoint(object):
         return wrapper
 
     def get_urlpatterns(self):
+        """
+        This returns a list of URL patterns for the endpoint
+        """
         return [
             url(r'^$', self.api_view(self.listing_view), name='listing'),
             url(r'^(\d+)/$', self.api_view(self.detail_view), name='detail'),
