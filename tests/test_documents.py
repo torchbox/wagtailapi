@@ -100,6 +100,24 @@ class TestDocumentListing(TestCase):
         document_id_list = self.get_document_id_list(content)
         self.assertEqual(document_id_list, [6, 11, 5, 1, 4, 8, 9, 7, 2, 10, 12, 3])
 
+    def test_ordering_by_random(self):
+        response_1 = self.get_response(order='random')
+        content_1 = json.loads(response_1.content.decode('UTF-8'))
+        document_id_list_1 = self.get_document_id_list(content_1)
+
+        response_2 = self.get_response(order='random')
+        content_2 = json.loads(response_2.content.decode('UTF-8'))
+        document_id_list_2 = self.get_document_id_list(content_2)
+
+        self.assertNotEqual(document_id_list_1, document_id_list_2)
+
+    def test_ordering_by_random_backwards_gives_error(self):
+        response = self.get_response(order='-random')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "cannot order by 'random' (unknown field)"})
+
     def test_ordering_by_unknown_field_gives_error(self):
         response = self.get_response(order='not_a_field')
         content = json.loads(response.content.decode('UTF-8'))

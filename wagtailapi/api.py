@@ -131,9 +131,16 @@ class BaseAPIEndpoint(object):
 
         It also supports reverse ordering
         Eg: ?order=-title
+
+        And random ordering
+        Eg: ?order=random
         """
         if 'order' in request.GET:
             order_by = request.GET['order']
+
+            # Random ordering
+            if order_by == 'random':
+                return queryset.order_by('?')
 
             # Check if reverse ordering is set
             if order_by.startswith('-'):

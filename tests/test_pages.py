@@ -235,6 +235,24 @@ class TestPageListing(TestCase):
         page_id_list = self.get_page_id_list(content)
         self.assertEqual(page_id_list, [15, 10, 6, 17, 20, 13, 2, 4, 9, 8, 14, 12, 18, 16, 5, 23, 19, 22, 21])
 
+    def test_ordering_by_random(self):
+        response_1 = self.get_response(order='random')
+        content_1 = json.loads(response_1.content.decode('UTF-8'))
+        page_id_list_1 = self.get_page_id_list(content_1)
+
+        response_2 = self.get_response(order='random')
+        content_2 = json.loads(response_2.content.decode('UTF-8'))
+        page_id_list_2 = self.get_page_id_list(content_2)
+
+        self.assertNotEqual(page_id_list_1, page_id_list_2)
+
+    def test_ordering_by_random_backwards_gives_error(self):
+        response = self.get_response(order='-random')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "cannot order by 'random' (unknown field)"})
+
     def test_ordering_default_with_type(self):
         response = self.get_response(type='tests.BlogEntryPage')
         content = json.loads(response.content.decode('UTF-8'))

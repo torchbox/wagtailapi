@@ -130,6 +130,24 @@ class TestImageListing(TestCase):
         image_id_list = self.get_image_id_list(content)
         self.assertEqual(image_id_list, [9, 14, 8, 4, 7, 11, 12, 10, 5, 13, 15, 6])
 
+    def test_ordering_by_random(self):
+        response_1 = self.get_response(order='random')
+        content_1 = json.loads(response_1.content.decode('UTF-8'))
+        image_id_list_1 = self.get_image_id_list(content_1)
+
+        response_2 = self.get_response(order='random')
+        content_2 = json.loads(response_2.content.decode('UTF-8'))
+        image_id_list_2 = self.get_image_id_list(content_2)
+
+        self.assertNotEqual(image_id_list_1, image_id_list_2)
+
+    def test_ordering_by_random_backwards_gives_error(self):
+        response = self.get_response(order='-random')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "cannot order by 'random' (unknown field)"})
+
     def test_ordering_by_unknown_field_gives_error(self):
         response = self.get_response(order='not_a_field')
         content = json.loads(response.content.decode('UTF-8'))
