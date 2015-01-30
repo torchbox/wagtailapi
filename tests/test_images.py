@@ -148,6 +148,13 @@ class TestImageListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "cannot order by 'random' (unknown field)"})
 
+    def test_ordering_by_random_with_offset_gives_error(self):
+        response = self.get_response(order='random', offset=10)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "random ordering with offset is not supported"})
+
     def test_ordering_by_unknown_field_gives_error(self):
         response = self.get_response(order='not_a_field')
         content = json.loads(response.content.decode('UTF-8'))

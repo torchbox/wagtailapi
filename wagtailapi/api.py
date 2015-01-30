@@ -140,6 +140,10 @@ class BaseAPIEndpoint(object):
 
             # Random ordering
             if order_by == 'random':
+                # Prevent ordering by random with offset
+                if 'offset' in request.GET:
+                    raise self.BadRequestError("random ordering with offset is not supported")
+
                 return queryset.order_by('?')
 
             # Check if reverse ordering is set
