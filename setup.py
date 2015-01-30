@@ -17,10 +17,12 @@ except ImportError:
     pass
 
 
+from wagtailapi import __version__
+
 
 setup(
     name='wagtailapi',
-    version='0.1',
+    version=__version__,
     description='',
     author='Karl Hobley',
     author_email='karlhobley10@gmail.com',
