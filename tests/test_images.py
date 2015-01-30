@@ -75,19 +75,19 @@ class TestImageListing(TestCase):
         for image in content['images']:
             self.assertEqual(image.keys(), set(['id', 'title', 'width', 'height']))
 
-    @unittest.expectedFailure
     def test_extra_fields_which_are_not_in_api_fields_gives_error(self):
         response = self.get_response(fields='uploaded_by_user')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: uploaded_by_user"})
 
-    @unittest.expectedFailure
     def test_extra_fields_unknown_field_gives_error(self):
-        response = self.get_response(fields='abc')
+        response = self.get_response(fields='123,title,abc')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: 123, abc"})
 
 
     # FILTERING

@@ -104,7 +104,10 @@ class BaseAPIEndpoint(object):
         if all_fields:
             fields = api_fields
         else:
-            fields = [field for field in fields if field in api_fields]
+            bad_fields = [field for field in fields if field not in api_fields]
+
+            if bad_fields:
+                raise self.BadRequestError("unknown fields: %s" % ', '.join(bad_fields))
 
         data.extend(get_api_data(obj, fields))
 

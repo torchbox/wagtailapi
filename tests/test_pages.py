@@ -135,26 +135,26 @@ class TestPageListing(TestCase):
             self.assertEqual(page.keys(), set(['id', 'meta', 'title', 'related_links']))
             self.assertIsInstance(page['related_links'], list)
 
-    def test_extra_fields_doesnt_work_without_type(self):
+    def test_extra_fields_without_type_gives_error(self):
         response = self.get_response(fields='title,related_links')
         content = json.loads(response.content.decode('UTF-8'))
 
-        for page in content['pages']:
-            self.assertEqual(page.keys(), set(['id', 'meta', 'title']))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: related_links"})
 
-    @unittest.expectedFailure
     def test_extra_fields_which_are_not_in_api_fields_gives_error(self):
         response = self.get_response(fields='path')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: path"})
 
-    @unittest.expectedFailure
     def test_extra_fields_unknown_field_gives_error(self):
-        response = self.get_response(fields='abc')
+        response = self.get_response(fields='123,title,abc')
         content = json.loads(response.content.decode('UTF-8'))
 
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: 123, abc"})
 
 
     # FILTERING
