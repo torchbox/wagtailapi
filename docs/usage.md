@@ -5,7 +5,7 @@
 
 ### Listing views
 
-Performing a ``GET`` request against one of the endpoints will get you a listing of objects in that endpoint. The response will look a little bit like this:
+Performing a ``GET`` request against one of the endpoints will get you a listing of objects in that endpoint. The response will look something like this:
 
 ```json
     GET /api/v1/endpoint name/
@@ -33,7 +33,7 @@ This is the basic structure of all of the listing views. They all have a ``meta`
 
 ### Detail views
 
-All of the endpoints also contain a "detail" view which returns information on an individual object. This view is always acessed by appending the id of the object to the URL.
+All of the endpoints also contain a "detail" view which returns information on an individual object. This view is always accessed by appending the id of the object to the URL.
 
 
 ### The ``pages`` endpoint
@@ -80,7 +80,7 @@ Each page object contains the ``id``, a ``meta`` section and the fields with the
 
 ##### ``meta``
 
-This section is for any piece of information that is useful, but not a database field. The initial implementation only includes the type name here, but possible additions would be things like urls to relevant parts of the api (eg. detail/edit views), status, parent page, etc.
+This section is for any piece of information that is useful, but not a database field. The initial implementation only includes the type name here, but possible additions would be things like urls to relevant parts of the API (eg. detail/edit views), status, parent page, etc.
 
 
 ##### Selecting a page type
@@ -361,7 +361,7 @@ To perform a full-text search, set the ``search`` parameter to the query string 
 
 The results are ordered by relevance. It is not possible to use the ``order`` parameter with a search query.
 
-Also, if your Wagtail site is using Elasticsearch, you do not need to select a type to access specific fields. This will search anything that's defined in the models' ``search_fields``.
+If your Wagtail site is using Elasticsearch, you do not need to select a type to access specific fields. This will search anything that's defined in the models' ``search_fields``.
 
 
 #### The detail view (``/api/v1/pages/{id}/``)
@@ -392,7 +392,7 @@ This view gives you access to all of the details for a particular page.
     }
 ```
 
-The format is the same as what is returned inside the listing view, with two additions:
+The format is the same as that which is returned inside the listing view, with two additions:
  - All of the available fields are added to the detail page by default
  - The ``meta`` section has a ``parent_id`` field that contains the ID of the parent page
 
@@ -617,7 +617,7 @@ This endpoint gives access to all uploaded documents.
 
 #### The listing view (``/api/v1/documents/``)
 
-The documents listing supports the same features as the images lising (documented above) but works with Documents instead.
+The documents listing supports the same features as the images listing (documented above) but works with Documents instead.
 
 
 #### The detail view (``/api/v1/documents/{id}/``)
