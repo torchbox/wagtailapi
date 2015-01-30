@@ -254,6 +254,13 @@ class TestImageListing(TestCase):
 
         self.assertEqual(set(image_id_list), set([5]))
 
+    def test_search_when_ordering_gives_error(self):
+        response = self.get_response(search='james', order='title')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "ordering with a search query is not supported"})
+
     @override_settings(WAGTAILAPI_SEARCH_ENABLED=False)
     def test_search_when_disabled_gives_error(self):
         response = self.get_response(search='james')

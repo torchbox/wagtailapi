@@ -156,6 +156,10 @@ class BaseAPIEndpoint(object):
         Eg: ?order=random
         """
         if 'order' in request.GET:
+            # Prevent ordering while searching
+            if 'search' in request.GET:
+                raise self.BadRequestError("ordering with a search query is not supported")
+
             order_by = request.GET['order']
 
             # Random ordering
