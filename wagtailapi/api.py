@@ -6,6 +6,7 @@ from functools import wraps
 from collections import OrderedDict
 
 from django_filters.filterset import filterset_factory
+from modelcluster.models import get_all_child_relations
 
 from django.db import models
 from django.utils.encoding import force_text
@@ -31,7 +32,7 @@ def get_api_data(obj, fields):
     if isinstance(obj, Page):
         child_relations = {
             child_relation.field.rel.related_name: child_relation.model
-            for child_relation in obj._meta.child_relations
+            for child_relation in get_all_child_relations(type(obj))
         }
 
     # Loop through fields
