@@ -1,3 +1,5 @@
+[![Build Status](http://drone.kaed.uk/api/badge/github.com/torchbox/wagtailapi/status.svg?branch=master)](http://drone.kaed.uk/github.com/torchbox/wagtailapi)
+
 # Wagtail API
 
 The ``wagtailapi`` module can be used to create a read-only, JSON-based API for public Wagtail content.
