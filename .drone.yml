@@ -1,4 +1,4 @@
 image: kaedroho/django-base
 script:
- - pip3.4 install mock wagtail
+ - pip3.4 install mock wagtail django-treebeard==3.0
  - python3.4 runtests.py
