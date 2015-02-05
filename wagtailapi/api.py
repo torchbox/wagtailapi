@@ -5,7 +5,6 @@ import urllib
 from functools import wraps
 from collections import OrderedDict
 
-from django_filters.filterset import filterset_factory
 from modelcluster.models import get_all_child_relations
 
 from django.db import models
@@ -139,11 +138,13 @@ class BaseAPIEndpoint(object):
         This performs field level filtering on the result set
         Eg: ?title=James Joyce
         """
-        # Get filterset class
-        filterset_class = filterset_factory(queryset.model)
+        fields = self.get_api_fields(queryset.model)
 
-        # Run field filters
-        return filterset_class(request.GET, queryset=queryset).qs
+        for field, value in request.GET.items():
+            if field in fields:
+                queryset = queryset.filter(**{field: value})
+
+        return queryset
 
     def do_ordering(self, request, queryset):
         """
