@@ -73,7 +73,6 @@ class TestDocumentListing(TestCase):
         for document in content['documents']:
             self.assertEqual(document.keys(), set(['id', 'title']))
 
-    @unittest.expectedFailure
     def test_extra_fields(self):
         response = self.get_response(fields='title,tags')
         content = json.loads(response.content.decode('UTF-8'))
@@ -81,7 +80,6 @@ class TestDocumentListing(TestCase):
         for document in content['documents']:
             self.assertEqual(document.keys(), set(['id', 'title', 'tags']))
 
-    @unittest.expectedFailure
     def test_extra_fields_tags(self):
         response = self.get_response(fields='tags')
         content = json.loads(response.content.decode('UTF-8'))
@@ -113,7 +111,6 @@ class TestDocumentListing(TestCase):
         document_id_list = self.get_document_id_list(content)
         self.assertEqual(document_id_list, [2])
 
-    @unittest.expectedFailure
     def test_filtering_tags(self):
         Document.objects.get(id=3).tags.add('test')
 
@@ -288,6 +285,13 @@ class TestDocumentListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "search is disabled"})
 
+    def test_search_when_filtering_by_tag_gives_error(self):
+        response = self.get_response(search='james', tags='wagtail')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "filtering by tag with a search query is not supported"})
+
 
 class TestDocumentDetail(TestCase):
     fixtures = ['wagtailapi_tests.json']
@@ -330,10 +334,9 @@ class TestDocumentDetail(TestCase):
         self.assertIn('title', content)
         self.assertEqual(content['title'], "Wagtail by Mark Harkin")
 
-    @unittest.expectedFailure
     def test_tags(self):
-        Image.objects.get(id=1).tags.add('hello')
-        Image.objects.get(id=1).tags.add('world')
+        Document.objects.get(id=1).tags.add('hello')
+        Document.objects.get(id=1).tags.add('world')
 
         response = self.get_response(1)
         content = json.loads(response.content.decode('UTF-8'))

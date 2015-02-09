@@ -80,7 +80,6 @@ class TestImageListing(TestCase):
         for image in content['images']:
             self.assertEqual(image.keys(), set(['id', 'title', 'width', 'height']))
 
-    @unittest.expectedFailure
     def test_extra_fields_tags(self):
         response = self.get_response(fields='tags')
         content = json.loads(response.content.decode('UTF-8'))
@@ -113,9 +112,8 @@ class TestImageListing(TestCase):
         image_id_list = self.get_image_id_list(content)
         self.assertEqual(image_id_list, [5])
 
-    @unittest.expectedFailure
     def test_filtering_tags(self):
-        Image.objects.get(id=6).tags.add('test')
+        get_image_model().objects.get(id=6).tags.add('test')
 
         response = self.get_response(tags='test')
         content = json.loads(response.content.decode('UTF-8'))
@@ -288,6 +286,13 @@ class TestImageListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "search is disabled"})
 
+    def test_search_when_filtering_by_tag_gives_error(self):
+        response = self.get_response(search='james', tags='wagtail')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "filtering by tag with a search query is not supported"})
+
 
 class TestImageDetail(TestCase):
     fixtures = ['wagtailapi_tests.json']
@@ -337,10 +342,10 @@ class TestImageDetail(TestCase):
         self.assertEqual(content['width'], 500)
         self.assertEqual(content['height'], 392)
 
-    @unittest.expectedFailure
     def test_tags(self):
-        Image.objects.get(id=5).tags.add('hello')
-        Image.objects.get(id=5).tags.add('world')
+        image = get_image_model().objects.get(id=5)
+        image.tags.add('hello')
+        image.tags.add('world')
 
         response = self.get_response(5)
         content = json.loads(response.content.decode('UTF-8'))

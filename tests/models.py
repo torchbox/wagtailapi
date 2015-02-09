@@ -261,6 +261,7 @@ class BlogEntryPage(Page):
 
     api_fields = (
         'body',
+        'tags',
         'date',
         'feed_image',
         'carousel_items',

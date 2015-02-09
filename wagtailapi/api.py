@@ -6,6 +6,8 @@ from functools import wraps
 from collections import OrderedDict
 
 from modelcluster.models import get_all_child_relations
+from taggit.managers import _TaggableManager
+from taggit.models import Tag
 
 from django.db import models
 from django.utils.encoding import force_text
@@ -23,6 +25,16 @@ from wagtail.wagtailcore.utils import resolve_model_string
 from wagtail.wagtailsearch.backends import get_search_backend
 
 from .utils import get_base_url
+
+
+class WagtailAPIJSONEncoder(DjangoJSONEncoder):
+    def default(self, o):
+        if isinstance(o, _TaggableManager):
+            return list(o.all())
+        elif isinstance(o, Tag):
+            return o.name
+        else:
+            return super(WagtailAPIJSONEncoder, self).default(o)
 
 
 def get_api_data(obj, fields):
@@ -140,9 +152,20 @@ class BaseAPIEndpoint(object):
         """
         fields = self.get_api_fields(queryset.model)
 
-        for field, value in request.GET.items():
-            if field in fields:
-                queryset = queryset.filter(**{field: value})
+        for field_name, value in request.GET.items():
+            if field_name in fields:
+                field = getattr(queryset.model, field_name, None)
+
+                if isinstance(field, _TaggableManager):
+                    for tag in value.split(','):
+                        queryset = queryset.filter(**{field_name + '__name': tag})
+
+                    # Stick a message on the queryset to indicate that tag filtering has been performed
+                    # This will let the do_search method know that it must raise an error as searching
+                    # and tag filtering at the same time is not supported
+                    queryset._filtered_by_tag = True
+                else:
+                    queryset = queryset.filter(**{field_name: value})
 
         return queryset
 
@@ -203,6 +226,10 @@ class BaseAPIEndpoint(object):
             if not search_enabled:
                 raise self.BadRequestError("search is disabled")
 
+            # Searching and filtering by tag at the same time is not supported
+            if getattr(queryset, '_filtered_by_tag', False):
+                raise self.BadRequestError("filtering by tag with a search query is not supported")
+
             search_query = request.GET['search']
 
             sb = get_search_backend()
@@ -244,7 +271,7 @@ class BaseAPIEndpoint(object):
         from it
         """
         return response_cls(
-            json.dumps(data, indent=4, cls=DjangoJSONEncoder),
+            json.dumps(data, indent=4, cls=WagtailAPIJSONEncoder),
             content_type='application/json'
         )
 
@@ -389,7 +416,7 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
         return self.model.objects.all()
 
     def get_api_fields(self, model):
-        api_fields = ['title', 'width', 'height']
+        api_fields = ['title', 'tags', 'width', 'height']
         api_fields.extend(super(ImagesAPIEndpoint, self).get_api_fields(model))
         return api_fields
 
@@ -439,7 +466,7 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
 
 class DocumentsAPIEndpoint(BaseAPIEndpoint):
     def get_api_fields(self, model):
-        api_fields = ['title']
+        api_fields = ['title', 'tags']
         api_fields.extend(super(DocumentsAPIEndpoint, self).get_api_fields(model))
         return api_fields
 
