@@ -471,13 +471,19 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
         total_count = queryset.count()
         queryset = self.do_pagination(request, queryset)
 
+        # Get list of fields to show in results
+        if 'fields' in request.GET:
+            fields = request.GET['fields'].split(',')
+        else:
+            fields = ('title', )
+
         return self.json_response(
             OrderedDict([
                 ('meta', OrderedDict([
                     ('total_count', total_count),
                 ])),
                 ('documents', [
-                    self.serialize_object(document, fields=('title', ), base_url=get_base_url(request))
+                    self.serialize_object(document, fields=fields, base_url=get_base_url(request))
                     for document in queryset
                 ]),
             ])
