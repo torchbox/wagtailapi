@@ -352,7 +352,11 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
 
     def do_child_of_filter(self, request, queryset):
         if 'child_of' in request.GET:
-            parent_page_id = request.GET['child_of']
+            try:
+                parent_page_id = int(request.GET['child_of'])
+                assert parent_page_id >= 0
+            except (ValueError, AssertionError):
+                raise self.BadRequestError("child_of must be a positive integer")
 
             try:
                 parent_page = Page.objects.get(id=parent_page_id)
