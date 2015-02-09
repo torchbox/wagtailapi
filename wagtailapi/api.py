@@ -348,7 +348,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         try:
             return resolve_model_string(model_name)
         except LookupError:
-            raise Http404("Type doesn't exist")
+            raise self.BadRequestError("type doesn't exist")
 
     def do_child_of_filter(self, request, queryset):
         if 'child_of' in request.GET:
@@ -358,7 +358,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
                 parent_page = Page.objects.get(id=parent_page_id)
                 return queryset.child_of(parent_page)
             except Page.DoesNotExist:
-                raise Http404("Parent page doesn't exist")
+                raise self.BadRequestError("parent page doesn't exist")
 
         return queryset
 

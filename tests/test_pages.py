@@ -112,8 +112,8 @@ class TestPageListing(TestCase):
         response = self.get_response(type='tests.IDontExist')
         content = json.loads(response.content.decode('UTF-8'))
 
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(content, {'message': "Type doesn't exist"})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "type doesn't exist"})
 
 
     # EXTRA FIELDS
@@ -235,8 +235,8 @@ class TestPageListing(TestCase):
         response = self.get_response(child_of=1000)
         content = json.loads(response.content.decode('UTF-8'))
 
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(content, {'message': "Parent page doesn't exist"})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "parent page doesn't exist"})
 
 
     # ORDERING
