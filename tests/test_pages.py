@@ -140,6 +140,15 @@ class TestPageListing(TestCase):
             self.assertEqual(page.keys(), set(['id', 'meta', 'title', 'related_links']))
             self.assertIsInstance(page['related_links'], list)
 
+    @unittest.expectedFailure
+    def test_extra_fields_tags(self):
+        response = self.get_response(type='tests.BlogEntryPage', fields='tags')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        for page in content['pages']:
+            self.assertEqual(page.keys(), set(['id', 'meta', 'tags']))
+            self.assertIsInstance(page['tags'], list)
+
     def test_extra_fields_without_type_gives_error(self):
         response = self.get_response(fields='title,related_links')
         content = json.loads(response.content.decode('UTF-8'))
@@ -184,6 +193,16 @@ class TestPageListing(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "query parameter is not an operation or a recognised field: date"})
+
+    @unittest.expectedFailure
+    def test_filtering_tags(self):
+        models.BlogEntryPage.objects.get(id=16).tags.add('test')
+
+        response = self.get_response(tags='test')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        page_id_list = self.get_page_id_list(content)
+        self.assertEqual(page_id_list, [16])
 
     def test_filtering_unknown_field_gives_error(self):
         response = self.get_response(not_a_field='abc')
@@ -454,6 +473,17 @@ class TestPageDetail(TestCase):
         self.assertEquals(content['date'], '2013-12-02')
 
         self.assertIn('body', content)
+
+    @unittest.expectedFailure
+    def test_tags(self):
+        models.BlogEntryPage.objects.get(id=16).tags.add('hello')
+        models.BlogEntryPage.objects.get(id=16).tags.add('world')
+
+        response = self.get_response(16)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('tags', content)
+        self.assertEqual(content['tags'], ['hello', 'world'])
 
     def test_child_relations(self):
         response = self.get_response(16)

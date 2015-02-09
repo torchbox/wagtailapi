@@ -80,6 +80,15 @@ class TestImageListing(TestCase):
         for image in content['images']:
             self.assertEqual(image.keys(), set(['id', 'title', 'width', 'height']))
 
+    @unittest.expectedFailure
+    def test_extra_fields_tags(self):
+        response = self.get_response(fields='tags')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        for image in content['images']:
+            self.assertEqual(image.keys(), set(['id', 'tags']))
+            self.assertIsInstance(image['tags'], list)
+
     def test_extra_fields_which_are_not_in_api_fields_gives_error(self):
         response = self.get_response(fields='uploaded_by_user')
         content = json.loads(response.content.decode('UTF-8'))
@@ -103,6 +112,16 @@ class TestImageListing(TestCase):
 
         image_id_list = self.get_image_id_list(content)
         self.assertEqual(image_id_list, [5])
+
+    @unittest.expectedFailure
+    def test_filtering_tags(self):
+        Image.objects.get(id=6).tags.add('test')
+
+        response = self.get_response(tags='test')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        image_id_list = self.get_image_id_list(content)
+        self.assertEqual(image_id_list, [6])
 
     def test_filtering_unknown_field_gives_error(self):
         response = self.get_response(not_a_field='abc')
@@ -317,6 +336,17 @@ class TestImageDetail(TestCase):
         self.assertIn('width', content)
         self.assertEqual(content['width'], 500)
         self.assertEqual(content['height'], 392)
+
+    @unittest.expectedFailure
+    def test_tags(self):
+        Image.objects.get(id=5).tags.add('hello')
+        Image.objects.get(id=5).tags.add('world')
+
+        response = self.get_response(5)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('tags', content)
+        self.assertEqual(content['tags'], ['hello', 'world'])
 
 
 @override_settings(

@@ -64,6 +64,48 @@ class TestDocumentListing(TestCase):
         self.assertEqual(content['meta']['total_count'], Document.objects.count())
 
 
+    # EXTRA FIELDS
+
+    def test_extra_fields_default(self):
+        response = self.get_response()
+        content = json.loads(response.content.decode('UTF-8'))
+
+        for document in content['documents']:
+            self.assertEqual(document.keys(), set(['id', 'title']))
+
+    @unittest.expectedFailure
+    def test_extra_fields(self):
+        response = self.get_response(fields='title,tags')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        for document in content['documents']:
+            self.assertEqual(document.keys(), set(['id', 'title', 'tags']))
+
+    @unittest.expectedFailure
+    def test_extra_fields_tags(self):
+        response = self.get_response(fields='tags')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        for document in content['documents']:
+            self.assertIsInstance(document['tags'], list)
+
+    @unittest.expectedFailure
+    def test_extra_fields_which_are_not_in_api_fields_gives_error(self):
+        response = self.get_response(fields='uploaded_by_user')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: uploaded_by_user"})
+
+    @unittest.expectedFailure
+    def test_extra_fields_unknown_field_gives_error(self):
+        response = self.get_response(fields='123,title,abc')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "unknown fields: 123, abc"})
+
+
     # FILTERING
 
     def test_filtering_exact_filter(self):
@@ -72,6 +114,16 @@ class TestDocumentListing(TestCase):
 
         document_id_list = self.get_document_id_list(content)
         self.assertEqual(document_id_list, [2])
+
+    @unittest.expectedFailure
+    def test_filtering_tags(self):
+        Document.objects.get(id=3).tags.add('test')
+
+        response = self.get_response(tags='test')
+        content = json.loads(response.content.decode('UTF-8'))
+
+        document_id_list = self.get_document_id_list(content)
+        self.assertEqual(document_id_list, [3])
 
     def test_filtering_unknown_field_gives_error(self):
         response = self.get_response(not_a_field='abc')
@@ -279,6 +331,17 @@ class TestDocumentDetail(TestCase):
 
         self.assertIn('title', content)
         self.assertEqual(content['title'], "Wagtail by Mark Harkin")
+
+    @unittest.expectedFailure
+    def test_tags(self):
+        Image.objects.get(id=1).tags.add('hello')
+        Image.objects.get(id=1).tags.add('world')
+
+        response = self.get_response(1)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertIn('tags', content)
+        self.assertEqual(content['tags'], ['hello', 'world'])
 
     def test_download_url(self):
         response = self.get_response(1)
