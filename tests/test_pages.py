@@ -490,6 +490,13 @@ class TestPageDetail(TestCase):
         self.assertIn('parent', content['meta'])
         self.assertEquals(content['meta']['parent'], 5)
 
+    def test_meta_parent_id_doesnt_show_root_page(self):
+        # Root page isn't in the site so don't show it if the user is looking at the home page
+        response = self.get_response(2)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertNotIn('parent', content['meta'])
+
     def test_custom_fields(self):
         response = self.get_response(16)
         content = json.loads(response.content.decode('UTF-8'))

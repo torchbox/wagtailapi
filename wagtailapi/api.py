@@ -101,14 +101,14 @@ class BaseAPIEndpoint(object):
 
         return api_fields
 
-    def serialize_object_metadata(self, obj, show_details=False, base_url=None):
+    def serialize_object_metadata(self, request, obj, show_details=False):
         """
         This returns a JSON-serialisable dict to use for the "meta"
         section of a particlular object.
         """
         return OrderedDict()
 
-    def serialize_object(self, obj, fields=(), all_fields=False, show_details=False, base_url=None):
+    def serialize_object(self, request, obj, fields=(), all_fields=False, show_details=False):
         """
         This converts an object into JSON-serialisable dict so it can
         be used in the API.
@@ -118,7 +118,7 @@ class BaseAPIEndpoint(object):
         ]
 
         # Add meta
-        metadata = self.serialize_object_metadata(obj, show_details=show_details, base_url=base_url)
+        metadata = self.serialize_object_metadata(request, obj, show_details=show_details)
         if metadata:
             data.append(('meta', metadata))
 
@@ -328,15 +328,19 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
         api_fields.extend(super(PagesAPIEndpoint, self).get_api_fields(model))
         return api_fields
 
-    def serialize_object_metadata(self, page, show_details=False, base_url=None):
-        data = super(PagesAPIEndpoint, self).serialize_object_metadata(page, show_details=show_details, base_url=base_url)
+    def serialize_object_metadata(self, request, page, show_details=False):
+        data = super(PagesAPIEndpoint, self).serialize_object_metadata(request, page, show_details=show_details)
 
         # Add type
         data['type'] = page.specific_class._meta.app_label + '.' + page.specific_class.__name__
 
         # Add parent id
         if show_details:
-            data['parent'] = page.get_parent().id
+            parent_id = page.get_parent().id
+
+            # Make sure the parent is visible in the API
+            if self.get_queryset(request).filter(id=parent_id).exists():
+                data['parent'] = page.get_parent().id
 
         return data
 
@@ -400,7 +404,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
                     ('total_count', total_count),
                 ])),
                 ('pages', [
-                    self.serialize_object(page, fields=fields, base_url=get_base_url(request))
+                    self.serialize_object(request, page, fields=fields)
                     for page in queryset
                 ]),
             ])
@@ -408,7 +412,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
 
     def detail_view(self, request, pk):
         page = get_object_or_404(self.get_queryset(request), pk=pk).specific
-        data = self.serialize_object(page, all_fields=True, show_details=True, base_url=get_base_url(request))
+        data = self.serialize_object(request, page, all_fields=True, show_details=True)
 
         return self.json_response(data)
 
@@ -455,7 +459,7 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
                     ('total_count', total_count),
                 ])),
                 ('images', [
-                    self.serialize_object(image, fields=fields, base_url=get_base_url(request))
+                    self.serialize_object(request, image, fields=fields)
                     for image in queryset
                 ]),
             ])
@@ -463,7 +467,7 @@ class ImagesAPIEndpoint(BaseAPIEndpoint):
 
     def detail_view(self, request, pk):
         image = get_object_or_404(self.get_queryset(request), pk=pk)
-        data = self.serialize_object(image, all_fields=True, base_url=get_base_url(request))
+        data = self.serialize_object(request, image, all_fields=True)
 
         return self.json_response(data)
 
@@ -474,12 +478,13 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
         api_fields.extend(super(DocumentsAPIEndpoint, self).get_api_fields(model))
         return api_fields
 
-    def serialize_object_metadata(self, document, show_details=False, base_url=None):
-        data = super(DocumentsAPIEndpoint, self).serialize_object_metadata(document, show_details=show_details, base_url=base_url)
+    def serialize_object_metadata(self, request, document, show_details=False):
+        data = super(DocumentsAPIEndpoint, self).serialize_object_metadata(request, document, show_details=show_details)
 
         # Download URL
         if show_details:
-            data['download_url'] = (base_url or '') + document.url
+            base_url = get_base_url(request) or ''
+            data['download_url'] = base_url + document.url
 
         return data
 
@@ -514,7 +519,7 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
                     ('total_count', total_count),
                 ])),
                 ('documents', [
-                    self.serialize_object(document, fields=fields, base_url=get_base_url(request))
+                    self.serialize_object(request, document, fields=fields)
                     for document in queryset
                 ]),
             ])
@@ -522,6 +527,6 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
 
     def detail_view(self, request, pk):
         document = get_object_or_404(Document, pk=pk)
-        data = self.serialize_object(document, all_fields=True, show_details=True, base_url=get_base_url(request))
+        data = self.serialize_object(request, document, all_fields=True, show_details=True)
 
         return self.json_response(data)
