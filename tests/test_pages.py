@@ -479,8 +479,8 @@ class TestPageDetail(TestCase):
         response = self.get_response(16)
         content = json.loads(response.content.decode('UTF-8'))
 
-        self.assertIn('parent_id', content['meta'])
-        self.assertEquals(content['meta']['parent_id'], 5)
+        self.assertIn('parent', content['meta'])
+        self.assertEquals(content['meta']['parent'], 5)
 
     def test_custom_fields(self):
         response = self.get_response(16)

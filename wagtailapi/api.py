@@ -336,7 +336,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
 
         # Add parent id
         if show_details:
-            data['parent_id'] = page.get_parent().id
+            data['parent'] = page.get_parent().id
 
         return data
 

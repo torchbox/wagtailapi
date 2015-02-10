@@ -378,7 +378,7 @@ This view gives you access to all of the details for a particular page.
         "id": 6,
         "meta": {
             "type": "demo.BlogPage",
-            "parent_id": 3
+            "parent": 3
         },
         "title": "My blog 3",
         "date_posted": "2015-01-25",
@@ -394,7 +394,7 @@ This view gives you access to all of the details for a particular page.
 
 The format is the same as that which is returned inside the listing view, with two additions:
  - All of the available fields are added to the detail page by default
- - The ``meta`` section has a ``parent_id`` field that contains the ID of the parent page
+ - The ``meta`` section has a ``parent`` field that contains the ID of the parent page
 
 
 ### The ``images`` endpoint
