@@ -238,7 +238,7 @@ class TestPageListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "parent page doesn't exist"})
 
-    def test_limit_not_integer_gives_error(self):
+    def test_child_of_not_integer_gives_error(self):
         response = self.get_response(child_of='abc')
         content = json.loads(response.content.decode('UTF-8'))
 
