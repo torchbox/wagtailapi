@@ -245,6 +245,14 @@ class TestPageListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "child_of must be a positive integer"})
 
+    def test_child_of_page_thats_not_in_same_site_gives_error(self):
+        # Root page is not in any site, so pretend it doesn't exist
+        response = self.get_response(child_of=1)
+        content = json.loads(response.content.decode('UTF-8'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, {'message': "parent page doesn't exist"})
+
 
     # ORDERING
 

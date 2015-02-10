@@ -359,7 +359,7 @@ class PagesAPIEndpoint(BaseAPIEndpoint):
                 raise self.BadRequestError("child_of must be a positive integer")
 
             try:
-                parent_page = Page.objects.get(id=parent_page_id)
+                parent_page = self.get_queryset(request).get(id=parent_page_id)
                 return queryset.child_of(parent_page)
             except Page.DoesNotExist:
                 raise self.BadRequestError("parent page doesn't exist")
