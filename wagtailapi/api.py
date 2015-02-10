@@ -83,6 +83,10 @@ class BaseAPIEndpoint(object):
         'search',
     )
 
+    def get_full_url(self, request, path):
+        base_url = get_base_url(request) or ''
+        return base_url + path
+
     def listing_view(self, request):
         return NotImplemented
 
@@ -483,8 +487,7 @@ class DocumentsAPIEndpoint(BaseAPIEndpoint):
 
         # Download URL
         if show_details:
-            base_url = get_base_url(request) or ''
-            data['download_url'] = base_url + document.url
+            data['download_url'] = self.get_full_url(request, document.url)
 
         return data
 
