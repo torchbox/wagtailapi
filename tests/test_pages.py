@@ -253,7 +253,7 @@ class TestPageListing(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(content, {'message': "parent page doesn't exist"})
 
-    # DECENDANT OF FILTER
+    # DESCENDANT OF FILTER
 
     def test_descendant_of_filter(self):
         response = self.get_response(descendant_of=6)
