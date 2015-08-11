@@ -1,6 +1,6 @@
 [![Build Status](http://drone.kaed.uk/api/badge/github.com/torchbox/wagtailapi/status.svg?branch=master)](http://drone.kaed.uk/github.com/torchbox/wagtailapi)
 
-NOTE: This module is now part of Wagtail (1.0+): http://docs.wagtail.io/en/v1.0rc2/reference/contrib/api/index.html
+NOTE: This module is now part of Wagtail (1.0+) and is no longer maintained: http://docs.wagtail.io/en/v1.0rc2/reference/contrib/api/index.html
 
 # Wagtail API
 
